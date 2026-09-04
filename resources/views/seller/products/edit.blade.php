@@ -1,0 +1,172 @@
+<x-seller.layout title="Edit Product" active="products">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Edit Product</h2>
+            <p class="text-sm text-gray-500 mt-1">Update "{{ $product->name }}"</p>
+        </div>
+        <a href="{{ route('seller.products.index') }}" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50">
+            Back to Products
+        </a>
+    </div>
+
+    @if($errors->any())
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center mb-2">
+                <svg class="w-5 h-5 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm font-medium text-red-700">Please fix the following errors:</p>
+            </div>
+            <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('seller.products.update', $product) }}">
+        @csrf
+        @method('PUT')
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Product Name (English) *</label>
+                            <input type="text" name="name" id="name" value="{{ old('name', $product->name) }}" required
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="name_bn" class="block text-sm font-medium text-gray-700 mb-1">Product Name (Bangla)</label>
+                            <input type="text" name="name_bn" id="name_bn" value="{{ old('name_bn', $product->name_bn) }}"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+                            <textarea name="description" id="description" rows="4"
+                                      class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">{{ old('description', $product->description) }}</textarea>
+                        </div>
+                        <div>
+                            <label for="description_bn" class="block text-sm font-medium text-gray-700 mb-1">Description (Bangla)</label>
+                            <textarea name="description_bn" id="description_bn" rows="4"
+                                      class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">{{ old('description_bn', $product->description_bn) }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing & Stock</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                            <input type="number" name="price" id="price" value="{{ old('price', $product->price) }}" required step="0.01" min="0"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="compare_at_price" class="block text-sm font-medium text-gray-700 mb-1">Compare at Price</label>
+                            <input type="number" name="compare_at_price" id="compare_at_price" value="{{ old('compare_at_price', $product->compare_at_price) }}" step="0.01" min="0"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="cost_price" class="block text-sm font-medium text-gray-700 mb-1">Cost Price</label>
+                            <input type="number" name="cost_price" id="cost_price" value="{{ old('cost_price', $product->cost_price) }}" step="0.01" min="0"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <input type="number" name="quantity" id="quantity" value="{{ old('quantity', $product->quantity) }}" min="0"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="low_stock_threshold" class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                            <input type="number" name="low_stock_threshold" id="low_stock_threshold" value="{{ old('low_stock_threshold', $product->low_stock_threshold) }}" min="0"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div class="flex items-center">
+                            <label class="flex items-center mt-6">
+                                <input type="checkbox" name="manage_stock" value="1" {{ old('manage_stock', $product->manage_stock) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="ml-2 text-sm text-gray-700">Manage Stock</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Organization</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
+                            <select name="type" id="type" required
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                <option value="physical" {{ old('type', $product->type) === 'physical' ? 'selected' : '' }}>Physical</option>
+                                <option value="digital" {{ old('type', $product->type) === 'digital' ? 'selected' : '' }}>Digital</option>
+                                <option value="service" {{ old('type', $product->type) === 'service' ? 'selected' : '' }}>Service</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select name="category_id" id="category_id"
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                <option value="">Select Category</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                            <select name="brand_id" id="brand_id"
+                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                <option value="">Select Brand</option>
+                                @foreach($brands as $brand)
+                                    <option value="{{ $brand->id }}" {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                            <input type="text" name="sku" id="sku" value="{{ old('sku', $product->sku) }}"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">SEO</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
+                            <input type="text" name="meta_title" id="meta_title" value="{{ old('meta_title', $product->meta_title) }}"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
+                            <textarea name="meta_description" id="meta_description" rows="3"
+                                      class="w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-sm">{{ old('meta_description', $product->meta_description) }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Status</h3>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                        <span class="ml-2 text-sm text-gray-700">Active</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                        Update Product
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</x-seller.layout>
