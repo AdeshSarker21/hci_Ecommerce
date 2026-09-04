@@ -76,6 +76,7 @@
                     <x-admin.nav-item icon="tag" label="Categories" href="{{ route('admin.categories.index') }}" active="{{ $active }}" slug="categories" />
                     <x-admin.nav-item icon="star" label="Brands" href="{{ route('admin.brands.index') }}" active="{{ $active }}" slug="brands" />
                     <x-admin.nav-item icon="cog" label="Attributes" href="{{ route('admin.attributes.index') }}" active="{{ $active }}" slug="attributes" />
+                    <x-admin.nav-item icon="clipboard-list" label="Spec Fields" href="{{ route('admin.category-attributes.index') }}" active="{{ $active }}" slug="category-attributes" />
                     <x-admin.nav-item icon="cube" label="Products" href="{{ route('admin.products.index') }}" active="{{ $active }}" slug="products" />
                 @endif
 

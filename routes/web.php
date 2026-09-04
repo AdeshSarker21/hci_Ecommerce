@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryAttributeController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -102,6 +103,16 @@ Route::prefix('admin')
         Route::delete('/brands/{brand}', [BrandController::class, 'destroy'])->name('brands.destroy')
             ->middleware('check.permission:products.delete,products.manage');
 
+        // Category Attributes (Specification Fields)
+        Route::get('/category-attributes', [CategoryAttributeController::class, 'index'])->name('category-attributes.index')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/category-attributes/{category}/edit', [CategoryAttributeController::class, 'edit'])->name('category-attributes.edit')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::put('/category-attributes/{category}', [CategoryAttributeController::class, 'update'])->name('category-attributes.update')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::get('/category-attributes/{category}/attributes', [CategoryAttributeController::class, 'getAttributes'])->name('category-attributes.get-attributes')
+            ->middleware('check.permission:products.view,products.manage');
+
         // Attributes
         Route::get('/attributes', [AttributeController::class, 'index'])->name('attributes.index')
             ->middleware('check.permission:products.view,products.manage');
@@ -167,4 +178,7 @@ Route::prefix('seller')
         Route::put('/products/{product}', [SellerProductController::class, 'update'])->name('products.update');
         Route::post('/products/{product}/submit', [SellerProductController::class, 'submitForReview'])->name('products.submit');
         Route::delete('/products/{product}', [SellerProductController::class, 'destroy'])->name('products.destroy');
+
+        // Category Attributes AJAX
+        Route::get('/category-attributes/{category}', [SellerProductController::class, 'getCategoryAttributes'])->name('category-attributes.get');
     });

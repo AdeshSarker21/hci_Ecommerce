@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAttributeValue;
 use Illuminate\Http\Request;
 
 class SellerProductController extends Controller
@@ -86,6 +87,8 @@ class SellerProductController extends Controller
         $validated['low_stock_threshold'] = $validated['low_stock_threshold'] ?? 5;
 
         $product = Product::create($validated);
+
+        $this->saveAttributeValues($product, $request->input('spec', []));
 
         return redirect()->route('seller.products.show', $product)
             ->with('success', 'Product created successfully as draft.');
@@ -168,6 +171,8 @@ class SellerProductController extends Controller
 
         $product->update($validated);
 
+        $this->saveAttributeValues($product, $request->input('spec', []));
+
         return back()->with('success', 'Product updated successfully.');
     }
 
@@ -212,5 +217,61 @@ class SellerProductController extends Controller
 
         return redirect()->route('seller.products.index')
             ->with('success', 'Product deleted successfully.');
+    }
+
+    public function getCategoryAttributes(Category $category)
+    {
+        $seller = auth()->user()->seller;
+
+        if (!$seller || !$seller->isApproved()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $attributes = $category->attributes()
+            ->with(['values' => function ($q) {
+                $q->orderBy('sort_order');
+            }])
+            ->orderByPivot('sort_order')
+            ->get()
+            ->map(function ($attr) {
+                return [
+                    'id' => $attr->id,
+                    'name' => $attr->name,
+                    'name_bn' => $attr->name_bn,
+                    'type' => $attr->type,
+                    'is_required' => $attr->pivot->is_required,
+                    'values' => $attr->values->map(fn($v) => [
+                        'id' => $v->id,
+                        'value' => $v->value,
+                        'value_bn' => $v->value_bn,
+                    ]),
+                ];
+            });
+
+        return response()->json($attributes);
+    }
+
+    private function saveAttributeValues(Product $product, array $attributeData): void
+    {
+        $product->attributeValues()->delete();
+
+        if (empty($attributeData)) {
+            return;
+        }
+
+        foreach ($attributeData as $attributeId => $value) {
+            if (is_array($value)) {
+                $value = implode(', ', array_filter($value));
+            }
+
+            if (empty($value)) {
+                continue;
+            }
+
+            $product->attributeValues()->create([
+                'attribute_id' => $attributeId,
+                'value' => $value,
+            ]);
+        }
     }
 }

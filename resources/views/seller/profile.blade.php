@@ -20,14 +20,14 @@
                     <div>
                         <label for="store_name" class="block text-sm font-medium text-gray-700">Store Name</label>
                         <input type="text" name="store_name" id="store_name" value="{{ old('store_name', $seller->store_name) }}"
-                               class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                               class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         @error('store_name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="store_description" class="block text-sm font-medium text-gray-700">Description</label>
                         <textarea name="store_description" id="store_description" rows="3"
-                                  class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">{{ old('store_description', $seller->store_description) }}</textarea>
+                                  class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">{{ old('store_description', $seller->store_description) }}</textarea>
                         @error('store_description') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -35,36 +35,36 @@
                         <div>
                             <label for="contact_phone" class="block text-sm font-medium text-gray-700">Phone</label>
                             <input type="text" name="contact_phone" id="contact_phone" value="{{ old('contact_phone', $seller->contact_phone) }}"
-                                   class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         </div>
                         <div>
                             <label for="contact_website" class="block text-sm font-medium text-gray-700">Website</label>
                             <input type="url" name="contact_website" id="contact_website" value="{{ old('contact_website', $seller->contact_website) }}"
-                                   class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         </div>
                     </div>
 
                     <div>
                         <label for="business_address" class="block text-sm font-medium text-gray-700">Business Address</label>
                         <input type="text" name="business_address" id="business_address" value="{{ old('business_address', $seller->business_address) }}"
-                               class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                               class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label for="business_city" class="block text-sm font-medium text-gray-700">City</label>
                             <input type="text" name="business_city" id="business_city" value="{{ old('business_city', $seller->business_city) }}"
-                                   class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         </div>
                         <div>
                             <label for="business_state" class="block text-sm font-medium text-gray-700">State</label>
                             <input type="text" name="business_state" id="business_state" value="{{ old('business_state', $seller->business_state) }}"
-                                   class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         </div>
                         <div>
                             <label for="business_country" class="block text-sm font-medium text-gray-700">Country</label>
                             <input type="text" name="business_country" id="business_country" value="{{ old('business_country', $seller->business_country) }}"
-                                   class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                   class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
                         </div>
                     </div>
                 </div>
