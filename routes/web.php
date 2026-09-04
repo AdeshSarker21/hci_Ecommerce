@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ProductReviewController;
 use App\Http\Controllers\ProductSearchController;
 use App\Http\Controllers\Seller\SellerController;
 use App\Http\Controllers\Seller\SellerInventoryController;
@@ -145,8 +146,16 @@ Route::prefix('admin')
         // Products
         Route::get('/products', [AdminProductController::class, 'index'])->name('products.index')
             ->middleware('check.permission:products.view,products.manage');
+        Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create')
+            ->middleware('check.permission:products.create,products.manage');
+        Route::post('/products', [AdminProductController::class, 'store'])->name('products.store')
+            ->middleware('check.permission:products.create,products.manage');
         Route::get('/products/{product}', [AdminProductController::class, 'show'])->name('products.show')
             ->middleware('check.permission:products.view,products.manage');
+        Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update')
+            ->middleware('check.permission:products.update,products.manage');
         Route::post('/products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve')
             ->middleware('check.permission:products.manage');
         Route::post('/products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject')
@@ -154,6 +163,20 @@ Route::prefix('admin')
         Route::post('/products/{product}/publish', [AdminProductController::class, 'publish'])->name('products.publish')
             ->middleware('check.permission:products.manage');
         Route::post('/products/{product}/unpublish', [AdminProductController::class, 'unpublish'])->name('products.unpublish')
+            ->middleware('check.permission:products.manage');
+
+        // Product Review Queue
+        Route::get('/review', [ProductReviewController::class, 'index'])->name('review.index')
+            ->middleware('check.permission:products.manage');
+        Route::get('/review/{product}', [ProductReviewController::class, 'show'])->name('review.show')
+            ->middleware('check.permission:products.manage');
+        Route::post('/review/{product}/approve', [ProductReviewController::class, 'approve'])->name('review.approve')
+            ->middleware('check.permission:products.manage');
+        Route::post('/review/{product}/reject', [ProductReviewController::class, 'reject'])->name('review.reject')
+            ->middleware('check.permission:products.manage');
+        Route::post('/review/{product}/publish', [ProductReviewController::class, 'publish'])->name('review.publish')
+            ->middleware('check.permission:products.manage');
+        Route::post('/review/{product}/unpublish', [ProductReviewController::class, 'unpublish'])->name('review.unpublish')
             ->middleware('check.permission:products.manage');
 
         // Inventory

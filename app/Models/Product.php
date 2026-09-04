@@ -25,6 +25,7 @@ class Product extends Model
         'status', 'rejection_reason', 'published_at', 'approved_at',
         'is_featured', 'is_active',
         'meta_title', 'meta_description',
+        'weight', 'length', 'width', 'height', 'shipping_class',
     ];
 
     protected function casts(): array
@@ -41,6 +42,10 @@ class Product extends Model
             'is_active' => 'boolean',
             'published_at' => 'datetime',
             'approved_at' => 'datetime',
+            'weight' => 'decimal:2',
+            'length' => 'decimal:2',
+            'width' => 'decimal:2',
+            'height' => 'decimal:2',
         ];
     }
 
@@ -106,6 +111,27 @@ class Product extends Model
         return $this->belongsToMany(Warehouse::class, 'product_warehouse_stock')
             ->withPivot('quantity', 'reserved_quantity')
             ->withTimestamps();
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function moderations(): HasMany
+    {
+        return $this->hasMany(ProductModeration::class)->latest();
+    }
+
+    public function logModeration(string $action, ?string $reason, string $previousStatus, string $newStatus, ?int $reviewerId = null): ProductModeration
+    {
+        return $this->moderations()->create([
+            'reviewer_id' => $reviewerId ?? auth()->id(),
+            'action' => $action,
+            'reason' => $reason,
+            'previous_status' => $previousStatus,
+            'new_status' => $newStatus,
+        ]);
     }
 
     public function getWarehouseStock(?int $warehouseId = null): int
@@ -314,5 +340,14 @@ class Product extends Model
     public function getFullNameAttribute(): string
     {
         return $this->name_bn ? "{$this->name} ({$this->name_bn})" : $this->name;
+    }
+
+    public function getPrimaryImageAttribute(): ?string
+    {
+        $featured = $this->images()->where('is_featured', true)->first();
+        if ($featured) {
+            return $featured->path;
+        }
+        return $this->images()->first()?->path;
     }
 }

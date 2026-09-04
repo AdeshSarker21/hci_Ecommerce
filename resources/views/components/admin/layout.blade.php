@@ -80,6 +80,7 @@
                     <x-admin.nav-item icon="cube" label="Products" href="{{ route('admin.products.index') }}" active="{{ $active }}" slug="products" />
                     <x-admin.nav-item icon="archive" label="Inventory" href="{{ route('admin.inventory.index') }}" active="{{ $active }}" slug="inventory" />
                     <x-admin.nav-item icon="building" label="Warehouses" href="{{ route('admin.warehouses.index') }}" active="{{ $active }}" slug="warehouses" />
+                    <x-admin.nav-item icon="clipboard-check" label="Review Queue" href="{{ route('admin.review.index') }}" active="{{ $active }}" slug="review" />
                 @endif
 
                 @if(auth()->user()->hasAnyPermission(['orders.view', 'orders.manage']))
