@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
@@ -98,6 +99,22 @@ class Product extends Model
     public function inventoryTransactions(): HasMany
     {
         return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function warehouses(): BelongsToMany
+    {
+        return $this->belongsToMany(Warehouse::class, 'product_warehouse_stock')
+            ->withPivot('quantity', 'reserved_quantity')
+            ->withTimestamps();
+    }
+
+    public function getWarehouseStock(?int $warehouseId = null): int
+    {
+        if ($warehouseId) {
+            $stock = $this->warehouses()->where('warehouse_id', $warehouseId)->first()?->pivot;
+            return $stock ? $stock->quantity : 0;
+        }
+        return $this->warehouses()->sum('product_warehouse_stock.quantity');
     }
 
     public function getAvailableStockAttribute(): int

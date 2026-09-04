@@ -10,12 +10,15 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SellerController as AdminSellerController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\ProductSearchController;
 use App\Http\Controllers\Seller\SellerController;
 use App\Http\Controllers\Seller\SellerInventoryController;
 use App\Http\Controllers\Seller\SellerProductController;
 use App\Http\Controllers\Seller\SellerStaffController;
+use App\Http\Controllers\Seller\SellerWarehouseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -33,6 +36,10 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 });
+
+// Public Product Search
+Route::get('/search', [ProductSearchController::class, 'index'])->name('search');
+Route::get('/product/{slug}', [ProductSearchController::class, 'show'])->name('product.show');
 
 // Admin Panel
 Route::prefix('admin')
@@ -170,6 +177,24 @@ Route::prefix('admin')
             ->middleware('check.permission:products.view,products.manage');
         Route::get('/inventory/{product}/qr.svg', [AdminInventoryController::class, 'qrCodeSvg'])->name('inventory.qr-svg')
             ->middleware('check.permission:products.view,products.manage');
+
+        // Warehouses
+        Route::get('/warehouses', [WarehouseController::class, 'index'])->name('warehouses.index')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/warehouses/create', [WarehouseController::class, 'create'])->name('warehouses.create')
+            ->middleware('check.permission:products.create,products.manage');
+        Route::post('/warehouses', [WarehouseController::class, 'store'])->name('warehouses.store')
+            ->middleware('check.permission:products.create,products.manage');
+        Route::get('/warehouses/{warehouse}', [WarehouseController::class, 'show'])->name('warehouses.show')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/warehouses/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('warehouses.edit')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::put('/warehouses/{warehouse}', [WarehouseController::class, 'update'])->name('warehouses.update')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::post('/warehouses/{warehouse}/toggle-status', [WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::delete('/warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->name('warehouses.destroy')
+            ->middleware('check.permission:products.delete,products.manage');
     });
 
 // Seller Dashboard
@@ -215,4 +240,13 @@ Route::prefix('seller')
         Route::post('/inventory/{product}/generate-barcode', [SellerInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode');
         Route::post('/inventory/{product}/generate-qr', [SellerInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr');
         Route::get('/inventory/{product}/print', [SellerInventoryController::class, 'printIdentifiers'])->name('inventory.print');
+
+        // Warehouses
+        Route::get('/warehouses', [SellerWarehouseController::class, 'index'])->name('warehouses.index');
+        Route::get('/warehouses/create', [SellerWarehouseController::class, 'create'])->name('warehouses.create');
+        Route::post('/warehouses', [SellerWarehouseController::class, 'store'])->name('warehouses.store');
+        Route::get('/warehouses/{warehouse}', [SellerWarehouseController::class, 'show'])->name('warehouses.show');
+        Route::get('/warehouses/{warehouse}/edit', [SellerWarehouseController::class, 'edit'])->name('warehouses.edit');
+        Route::put('/warehouses/{warehouse}', [SellerWarehouseController::class, 'update'])->name('warehouses.update');
+        Route::delete('/warehouses/{warehouse}', [SellerWarehouseController::class, 'destroy'])->name('warehouses.destroy');
     });
