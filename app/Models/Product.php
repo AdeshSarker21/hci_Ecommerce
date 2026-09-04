@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -16,9 +18,9 @@ class Product extends Model
     protected $fillable = [
         'seller_id', 'category_id', 'brand_id',
         'name', 'name_bn', 'slug', 'description', 'description_bn',
-        'type', 'sku',
+        'type', 'sku', 'barcode',
         'price', 'compare_at_price', 'cost_price',
-        'quantity', 'manage_stock', 'low_stock_threshold',
+        'quantity', 'reserved_quantity', 'manage_stock', 'low_stock_threshold',
         'status', 'rejection_reason', 'published_at', 'approved_at',
         'is_featured', 'is_active',
         'meta_title', 'meta_description',
@@ -31,6 +33,7 @@ class Product extends Model
             'compare_at_price' => 'decimal:2',
             'cost_price' => 'decimal:2',
             'quantity' => 'integer',
+            'reserved_quantity' => 'integer',
             'manage_stock' => 'boolean',
             'low_stock_threshold' => 'integer',
             'is_featured' => 'boolean',
@@ -53,9 +56,23 @@ class Product extends Model
                 $counter++;
             }
             if (empty($product->sku)) {
-                $product->sku = 'SKU-' . strtoupper(uniqid());
+                $product->sku = self::generateUniqueSku();
+            }
+            if (empty($product->barcode) && $product->sku) {
+                $product->barcode = $product->sku;
             }
         });
+    }
+
+    public static function generateUniqueSku(): string
+    {
+        $prefix = 'SKU';
+        do {
+            $number = str_pad(Cache::increment('sku_counter'), 6, '0', STR_PAD_LEFT);
+            $sku = $prefix . '-' . $number;
+        } while (static::withTrashed()->where('sku', $sku)->exists());
+
+        return $sku;
     }
 
     public function seller(): BelongsTo
@@ -76,6 +93,43 @@ class Product extends Model
     public function attributeValues(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class);
+    }
+
+    public function inventoryTransactions(): HasMany
+    {
+        return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function getAvailableStockAttribute(): int
+    {
+        if (!$this->manage_stock) {
+            return PHP_INT_MAX;
+        }
+        return max(0, $this->quantity - $this->reserved_quantity);
+    }
+
+    public function getBarcodeUrlAttribute(): ?string
+    {
+        if (!$this->sku) {
+            return null;
+        }
+        $path = 'barcodes/' . $this->sku . '.svg';
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+        return null;
+    }
+
+    public function getQrCodeUrlAttribute(): ?string
+    {
+        if (!$this->sku) {
+            return null;
+        }
+        $path = 'qr-codes/' . $this->sku . '.svg';
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+        return null;
     }
 
     public function scopeActive($query)

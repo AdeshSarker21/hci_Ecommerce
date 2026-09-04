@@ -78,6 +78,7 @@
                     <x-admin.nav-item icon="cog" label="Attributes" href="{{ route('admin.attributes.index') }}" active="{{ $active }}" slug="attributes" />
                     <x-admin.nav-item icon="clipboard-list" label="Spec Fields" href="{{ route('admin.category-attributes.index') }}" active="{{ $active }}" slug="category-attributes" />
                     <x-admin.nav-item icon="cube" label="Products" href="{{ route('admin.products.index') }}" active="{{ $active }}" slug="products" />
+                    <x-admin.nav-item icon="archive" label="Inventory" href="{{ route('admin.inventory.index') }}" active="{{ $active }}" slug="inventory" />
                 @endif
 
                 @if(auth()->user()->hasAnyPermission(['orders.view', 'orders.manage']))

@@ -179,7 +179,7 @@
                                             x-model="values[field.id]"
                                             :required="field.is_required"
                                             class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-200">
-                                        <option value="">Select {{ field.name }}</option>
+                                        <option value="">Select @{{ field.name }}</option>
                                         <template x-for="opt in field.values" :key="opt.id">
                                             <option :value="opt.value" x-text="opt.value_bn ? opt.value + ' (' + opt.value_bn + ')' : opt.value"></option>
                                         </template>

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryAttributeController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SellerController as AdminSellerController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Seller\SellerController;
+use App\Http\Controllers\Seller\SellerInventoryController;
 use App\Http\Controllers\Seller\SellerProductController;
 use App\Http\Controllers\Seller\SellerStaffController;
 use Illuminate\Support\Facades\Route;
@@ -146,6 +148,28 @@ Route::prefix('admin')
             ->middleware('check.permission:products.manage');
         Route::post('/products/{product}/unpublish', [AdminProductController::class, 'unpublish'])->name('products.unpublish')
             ->middleware('check.permission:products.manage');
+
+        // Inventory
+        Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/inventory/{product}', [AdminInventoryController::class, 'show'])->name('inventory.show')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::post('/inventory/{product}/adjust', [AdminInventoryController::class, 'adjust'])->name('inventory.adjust')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::post('/inventory/{product}/add-stock', [AdminInventoryController::class, 'addStock'])->name('inventory.add-stock')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::post('/inventory/{product}/remove-stock', [AdminInventoryController::class, 'removeStock'])->name('inventory.remove-stock')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::post('/inventory/{product}/generate-barcode', [AdminInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::post('/inventory/{product}/generate-qr', [AdminInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr')
+            ->middleware('check.permission:products.update,products.manage');
+        Route::get('/inventory/{product}/print', [AdminInventoryController::class, 'printIdentifiers'])->name('inventory.print')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/inventory/{product}/barcode.svg', [AdminInventoryController::class, 'barcodeSvg'])->name('inventory.barcode-svg')
+            ->middleware('check.permission:products.view,products.manage');
+        Route::get('/inventory/{product}/qr.svg', [AdminInventoryController::class, 'qrCodeSvg'])->name('inventory.qr-svg')
+            ->middleware('check.permission:products.view,products.manage');
     });
 
 // Seller Dashboard
@@ -181,4 +205,14 @@ Route::prefix('seller')
 
         // Category Attributes AJAX
         Route::get('/category-attributes/{category}', [SellerProductController::class, 'getCategoryAttributes'])->name('category-attributes.get');
+
+        // Inventory
+        Route::get('/inventory', [SellerInventoryController::class, 'index'])->name('inventory.index');
+        Route::get('/inventory/{product}', [SellerInventoryController::class, 'show'])->name('inventory.show');
+        Route::post('/inventory/{product}/adjust', [SellerInventoryController::class, 'adjust'])->name('inventory.adjust');
+        Route::post('/inventory/{product}/add-stock', [SellerInventoryController::class, 'addStock'])->name('inventory.add-stock');
+        Route::post('/inventory/{product}/remove-stock', [SellerInventoryController::class, 'removeStock'])->name('inventory.remove-stock');
+        Route::post('/inventory/{product}/generate-barcode', [SellerInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode');
+        Route::post('/inventory/{product}/generate-qr', [SellerInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr');
+        Route::get('/inventory/{product}/print', [SellerInventoryController::class, 'printIdentifiers'])->name('inventory.print');
     });
