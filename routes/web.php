@@ -16,7 +16,9 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductReviewController;
 use App\Http\Controllers\ProductSearchController;
+use App\Http\Controllers\StorefrontReviewController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\CategoryController as StorefrontCategoryController;
 use App\Http\Controllers\Seller\SellerController;
 use App\Http\Controllers\Seller\SellerCommissionController;
 use App\Http\Controllers\Seller\SellerDashboardController;
@@ -47,6 +49,12 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
 // Public Product Search
 Route::get('/search', [ProductSearchController::class, 'index'])->name('search');
 Route::get('/product/{slug}', [ProductSearchController::class, 'show'])->name('product.show');
+
+// Product Reviews
+Route::post('/reviews', [StorefrontReviewController::class, 'store'])->name('reviews.store')->middleware('auth');
+
+// Public Category Listing
+Route::get('/category/{slug}', [StorefrontCategoryController::class, 'show'])->name('category.show');
 
 // Public Seller Storefront
 Route::get('/store/{slug}', [StorefrontController::class, 'show'])->name('storefront.show');

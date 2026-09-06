@@ -130,6 +130,26 @@ class Product extends Model
         return $this->hasMany(ProductModeration::class)->latest();
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    public function approvedReviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class)->where('is_approved', true)->latest();
+    }
+
+    public function getAverageRatingAttribute(): float
+    {
+        return $this->approvedReviews()->avg('rating') ?? 0;
+    }
+
+    public function getReviewsCountAttribute(): int
+    {
+        return $this->approvedReviews()->count();
+    }
+
     public function logModeration(string $action, ?string $reason, string $previousStatus, string $newStatus, ?int $reviewerId = null): ProductModeration
     {
         return $this->moderations()->create([

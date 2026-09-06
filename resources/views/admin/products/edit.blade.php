@@ -198,6 +198,95 @@
                 <x-admin.card title="Product Images">
                     <div class="space-y-4">
                         @if($product->images->count() > 0)
+                            {{-- Image Slider --}}
+                            <div class="relative" x-data="{ currentSlide: 0, zoomLevel: 1, isDragging: false, dragX: 0, dragY: 0, startDragX: 0, startDragY: 0 }"
+                                 x-init="$watch('currentSlide', () => { zoomLevel = 1; dragX = 0; dragY = 0; })">
+
+                                {{-- Main Image Viewer --}}
+                                <div class="relative bg-gray-100 rounded-xl overflow-hidden aspect-[4/3] cursor-grab active:cursor-grabbing"
+                                     x-on:mousedown="if (zoomLevel > 1) { isDragging = true; startDragX = $event.clientX - dragX; startDragY = $event.clientY - dragY; }"
+                                     x-on:mousemove="if (isDragging) { dragX = $event.clientX - startDragX; dragY = $event.clientY - startDragY; }"
+                                     x-on:mouseup="isDragging = false"
+                                     x-on:mouseleave="isDragging = false"
+                                     x-on:wheel.prevent="zoomLevel = Math.min(5, Math.max(1, zoomLevel + ($event.deltaY > 0 ? -0.25 : 0.25)))">
+
+                                    @foreach($product->images as $idx => $img)
+                                        <img src="{{ $img->full_url }}"
+                                             alt="{{ $img->alt_text }}"
+                                             class="absolute inset-0 w-full h-full object-contain transition-transform duration-200 select-none"
+                                             :class="currentSlide === {{ $idx }} ? 'z-10' : 'z-0 opacity-0'"
+                                             :style="currentSlide === {{ $idx }} ? `transform: scale(${zoomLevel}) translate(${dragX / zoomLevel}px, ${dragY / zoomLevel}px)` : ''"
+                                             draggable="false">
+                                    @endforeach
+
+                                    {{-- Slider Navigation --}}
+                                    @if($product->images->count() > 1)
+                                        <button type="button" x-on:click="currentSlide = (currentSlide - 1 + {{ $product->images->count() }}) % {{ $product->images->count() }}; zoomLevel = 1; dragX = 0; dragY = 0;"
+                                                class="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-lg transition-all hover:scale-110">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                            </svg>
+                                        </button>
+                                        <button type="button" x-on:click="currentSlide = (currentSlide + 1) % {{ $product->images->count() }}; zoomLevel = 1; dragX = 0; dragY = 0;"
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-lg transition-all hover:scale-110">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </button>
+                                    @endif
+
+                                    {{-- Zoom Controls --}}
+                                    <div class="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+                                        <button type="button" x-on:click="zoomLevel = Math.min(5, zoomLevel + 0.5)"
+                                                class="p-1.5 rounded-lg bg-white/80 hover:bg-white text-gray-700 shadow transition-all hover:scale-110"
+                                                title="Zoom In">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                                            </svg>
+                                        </button>
+                                        <button type="button" x-on:click="zoomLevel = Math.max(1, zoomLevel - 0.5); if (zoomLevel === 1) { dragX = 0; dragY = 0; }"
+                                                class="p-1.5 rounded-lg bg-white/80 hover:bg-white text-gray-700 shadow transition-all hover:scale-110"
+                                                title="Zoom Out">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/>
+                                            </svg>
+                                        </button>
+                                        <button type="button" x-on:click="zoomLevel = 1; dragX = 0; dragY = 0;"
+                                                class="p-1.5 rounded-lg bg-white/80 hover:bg-white text-gray-700 shadow transition-all hover:scale-110"
+                                                title="Reset Zoom">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    {{-- Zoom Level Indicator --}}
+                                    <div class="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-lg bg-black/60 text-white text-xs font-medium"
+                                         x-show="zoomLevel > 1" x-transition>
+                                        <span x-text="Math.round(zoomLevel * 100) + '%'"></span>
+                                    </div>
+
+                                    {{-- Slide Counter --}}
+                                    <div class="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-black/60 text-white text-xs font-medium">
+                                        <span x-text="currentSlide + 1 + ' / {{ $product->images->count() }}'"></span>
+                                    </div>
+                                </div>
+
+                                {{-- Thumbnail Strip --}}
+                                @if($product->images->count() > 1)
+                                    <div class="flex gap-2 mt-3 overflow-x-auto pb-1">
+                                        @foreach($product->images as $idx => $img)
+                                            <button type="button" x-on:click="currentSlide = {{ $idx }}; zoomLevel = 1; dragX = 0; dragY = 0;"
+                                                    class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover:scale-105"
+                                                    :class="currentSlide === {{ $idx }} ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-400'">
+                                                <img src="{{ $img->full_url }}" alt="{{ $img->alt_text }}" class="w-full h-full object-cover">
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Image Management Grid --}}
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 @foreach($product->images as $img)
                                     <div class="relative group rounded-lg overflow-hidden border-2 {{ $img->is_featured ? 'border-indigo-500' : 'border-gray-200' }}"

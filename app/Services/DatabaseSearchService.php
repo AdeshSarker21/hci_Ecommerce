@@ -90,11 +90,13 @@ class DatabaseSearchService implements ProductSearchInterface
             'price_desc' => $query->orderBy('price', 'desc'),
             'newest' => $query->latest(),
             'oldest' => $query->oldest(),
+            'rating' => $query->join('sellers', 'products.seller_id', '=', 'sellers.id')
+                ->orderByDesc('sellers.average_rating')
+                ->select('products.*'),
             'name_asc' => $query->orderBy('name', 'asc'),
             'name_desc' => $query->orderBy('name', 'desc'),
-            'popularity' => $query->withCount('inventoryTransactions as sale_count')
-                ->whereHas('inventoryTransactions', fn ($q) => $q->where('type', 'sale'))
-                ->orderByDesc('sale_count')
+            'popularity' => $query->withCount('orders as sales_count')
+                ->orderByDesc('sales_count')
                 ->latest(),
             default => $query->latest(),
         };
