@@ -42,6 +42,8 @@ class WebAuthController extends Controller
 
         $request->session()->regenerate();
 
+        app(\App\Services\RecentlyViewedService::class)->mergeGuestData($user->id);
+
         return redirect()->intended(route('dashboard'));
     }
 
@@ -74,6 +76,8 @@ class WebAuthController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
+
+        app(\App\Services\RecentlyViewedService::class)->mergeGuestData($user->id);
 
         return redirect()->route('dashboard');
     }

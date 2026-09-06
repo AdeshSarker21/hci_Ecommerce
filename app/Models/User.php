@@ -48,6 +48,16 @@ class User extends Authenticatable
         return $this->hasOne(Seller::class);
     }
 
+    public function wishlistItems()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function recentlyViewedItems()
+    {
+        return $this->hasMany(RecentlyViewed::class);
+    }
+
     public function isSeller(): bool
     {
         return $this->hasRole('seller') || $this->seller()->exists();

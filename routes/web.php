@@ -31,6 +31,7 @@ use App\Http\Controllers\Seller\SellerWalletController;
 use App\Http\Controllers\Seller\SellerWarehouseController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -71,6 +72,24 @@ Route::get('/cart/summary', [CartController::class, 'summary'])->name('cart.summ
 Route::post('/cart/revalidate', [CartController::class, 'revalidate'])->name('cart.revalidate');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
 Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+
+// Wishlist (authenticated only)
+Route::middleware(['auth', 'ensure.active'])->prefix('wishlist')->name('wishlist.')->group(function () {
+    Route::get('/', [WishlistController::class, 'index'])->name('index');
+    Route::post('/toggle/{id}', [WishlistController::class, 'toggle'])->name('toggle');
+    Route::delete('/{id}', [WishlistController::class, 'remove'])->name('remove');
+    Route::delete('/', [WishlistController::class, 'clear'])->name('clear');
+    Route::post('/move-to-cart/{id}', [WishlistController::class, 'moveToCart'])->name('move-to-cart');
+    Route::get('/count', [WishlistController::class, 'count'])->name('count');
+});
+
+Route::post('/wishlist/toggle/{id}', [WishlistController::class, 'toggle'])->name('wishlist.toggle.api')->middleware('auth');
+Route::get('/wishlist/check/{id}', [WishlistController::class, 'check'])->name('wishlist.check');
+Route::get('/recently-viewed', [WishlistController::class, 'recentlyViewed'])->name('recently-viewed');
+Route::get('/recently-viewed/track/{id}', function ($id) {
+    app(\App\Services\RecentlyViewedService::class)->track($id);
+    return response()->json(['success' => true]);
+})->name('recently-viewed.track');
 
 // Admin Panel
 Route::prefix('admin')

@@ -149,9 +149,13 @@ class CategoryController extends Controller
 
         $breadcrumbs = $category->getAncestors()->push($category);
 
+        $wishlistedIds = auth()->check()
+            ? \App\Models\Wishlist::where('user_id', auth()->id())->pluck('product_id')->toArray()
+            : [];
+
         return view('category.show', compact(
             'category', 'children', 'products', 'brands', 'sellers',
-            'filterableAttributes', 'priceRange', 'activeFilters', 'breadcrumbs', 'sort'
+            'filterableAttributes', 'priceRange', 'activeFilters', 'breadcrumbs', 'sort', 'wishlistedIds'
         ));
     }
 

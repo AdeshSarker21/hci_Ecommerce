@@ -668,6 +668,33 @@
                     this.allImages.forEach((img, i) => {
                         if (img === this.currentImage) this.currentImageIndex = i;
                     });
+                    this.checkWishlist();
+                    this.trackRecentlyViewed();
+                },
+                async checkWishlist() {
+                    try {
+                        const res = await fetch('/wishlist/check/{{ $product->id }}', {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (data.success) this.isWishlisted = data.is_wishlisted;
+                    } catch (e) {}
+                },
+                trackRecentlyViewed() {
+                    try {
+                        fetch('/recently-viewed/track/{{ $product->id }}', {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        }).catch(() => {});
+                        const stored = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
+                        const current = {
+                            slug: @json($product->slug),
+                            name: @json($name),
+                            price: {{ $product->price }},
+                            image: @json($product->primary_image ? asset('storage/' . $product->primary_image) : null)
+                        };
+                        const updated = [current, ...stored.filter(p => p.slug !== '{{ $product->slug }}')].slice(0, 20);
+                        localStorage.setItem('recently_viewed', JSON.stringify(updated));
+                    } catch (e) {}
                 },
                 setImage(src, index) {
                     this.currentImage = src;
@@ -700,6 +727,26 @@
                 },
                 toggleWishlist() {
                     this.isWishlisted = !this.isWishlisted;
+                    fetch('/wishlist/toggle/{{ $product->id }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    }).then(r => r.json()).then(d => {
+                        if (d.success) {
+                            this.isWishlisted = d.action === 'added';
+                            this.$dispatch('show-toast', { message: d.message });
+                            const badge = document.querySelector('[x-ref="wishlistBadge"]');
+                            if (badge) badge.textContent = d.wishlist_count;
+                        } else {
+                            this.isWishlisted = !this.isWishlisted;
+                            this.$dispatch('show-toast', { message: d.message });
+                        }
+                    }).catch(() => {
+                        this.isWishlisted = !this.isWishlisted;
+                    });
                 },
                 addToCart() {
                     Alpine.store('cart').addItem({{ $product->id }}, this.quantity, Object.keys(this.selectedVariants).length > 0 ? this.selectedVariants : null);
@@ -714,19 +761,22 @@
             return {
                 products: [],
                 init() {
-                    try {
-                        const stored = localStorage.getItem('recently_viewed');
-                        const all = stored ? JSON.parse(stored) : [];
-                        this.products = all.filter(p => p.slug !== '{{ $product->slug }}').slice(0, 4);
-                        const current = {
-                            slug: '{{ $product->slug }}',
-                            name: @json($name),
-                            price: {{ $product->price }},
-                            image: @json($product->primary_image ? asset('storage/' . $product->primary_image) : null)
-                        };
-                        const updated = [current, ...all.filter(p => p.slug !== '{{ $product->slug }}')].slice(0, 20);
-                        localStorage.setItem('recently_viewed', JSON.stringify(updated));
-                    } catch (e) { this.products = []; }
+                    @auth
+                        fetch('/recently-viewed', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.success) {
+                                    this.products = d.items.filter(p => p.slug !== '{{ $product->slug }}').slice(0, 4);
+                                }
+                            })
+                            .catch(() => {});
+                    @else
+                        try {
+                            const stored = localStorage.getItem('recently_viewed');
+                            const all = stored ? JSON.parse(stored) : [];
+                            this.products = all.filter(p => p.slug !== '{{ $product->slug }}').slice(0, 4);
+                        } catch (e) { this.products = []; }
+                    @endauth
                 }
             };
         }

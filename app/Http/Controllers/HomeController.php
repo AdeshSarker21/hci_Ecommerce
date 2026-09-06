@@ -61,6 +61,10 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
+        $wishlistedIds = auth()->check()
+            ? \App\Models\Wishlist::where('user_id', auth()->id())->pluck('product_id')->toArray()
+            : [];
+
         return view('welcome', compact(
             'categories',
             'featuredProducts',
@@ -69,7 +73,8 @@ class HomeController extends Controller
             'flashSaleProducts',
             'bestSellingProducts',
             'featuredSellers',
-            'topBrands'
+            'topBrands',
+            'wishlistedIds'
         ));
     }
 }

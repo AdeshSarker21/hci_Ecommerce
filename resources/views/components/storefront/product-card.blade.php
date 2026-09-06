@@ -1,4 +1,4 @@
-@props(['product', 'showSeller' => false])
+@props(['product', 'showSeller' => false, 'wishlistedIds' => []])
 
 @php
     $discount = $product->discount_percentage;
@@ -9,6 +9,7 @@
     $brandName = $locale === 'bn' && $product->brand?->name_bn ? $product->brand->name_bn : $product->brand?->name;
     $rating = $product->seller?->average_rating ?? 0;
     $reviewCount = $product->seller?->total_reviews ?? 0;
+    $isWishlisted = in_array($product->id, $wishlistedIds);
 @endphp
 
 <div class="product-card group relative bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 hover:-translate-y-1" data-gsap="product">
@@ -36,11 +37,26 @@
         </div>
 
         {{-- Wishlist --}}
-        <button class="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:scale-110 hover:text-red-500 text-gray-400" title="{{ __('Add to Wishlist') }}">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-        </button>
+        @auth
+            <button
+                x-data="{ wishlisted: {{ $isWishlisted ? 'true' : 'false' }} }"
+                @click.prevent="wishlisted = !wishlisted; fetch('/wishlist/toggle/{{ $product->id }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }}).then(r => r.json()).then(d => { if(d.success) { $dispatch('show-toast', { message: d.message }); const badge = document.querySelector('[x-ref=\"wishlistBadge\"]'); if(badge) badge.textContent = d.wishlist_count; } else { wishlisted = !wishlisted; $dispatch('show-toast', { message: d.message }); }}).catch(() => { wishlisted = !wishlisted; })"
+                :class="wishlisted ? 'text-red-500 bg-red-50 opacity-100' : 'text-gray-400 hover:text-red-500'"
+                class="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:scale-110"
+                title="{{ __('Add to Wishlist') }}">
+                <svg class="w-4 h-4" :fill="wishlisted ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+            </button>
+        @else
+            <a href="{{ route('login') }}"
+               class="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:scale-110 text-gray-400 hover:text-red-500"
+               title="{{ __('Add to Wishlist') }}">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+            </a>
+        @endauth
 
         {{-- Quick Actions --}}
         <div class="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-300">

@@ -46,10 +46,18 @@
                     </button>
 
                     {{-- Wishlist --}}
-                    <button class="relative p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">0</span>
-                    </button>
+                    @auth
+                        <a href="{{ route('wishlist.index') }}" class="relative p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                            <span x-ref="wishlistBadge" x-data="wishlistCount()" x-init="init()"
+                                  x-show="count > 0" x-text="count"
+                                  class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center"></span>
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" class="relative p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        </a>
+                    @endauth
 
                     {{-- Cart --}}
                     <button @click="$store.cart.open = !$store.cart.open" class="relative p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors">
@@ -230,7 +238,7 @@
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($flashSaleProducts->take(4) as $product)
-                    <x-storefront.product-card :product="$product" />
+                    <x-storefront.product-card :product="$product" :wishlistedIds="$wishlistedIds" />
                 @endforeach
             </div>
         </div>
@@ -274,7 +282,7 @@
             />
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($trendingProducts->take(4) as $product)
-                    <x-storefront.product-card :product="$product" />
+                    <x-storefront.product-card :product="$product" :wishlistedIds="$wishlistedIds" />
                 @endforeach
             </div>
         </div>
@@ -312,7 +320,7 @@
             />
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($newProducts->take(4) as $product)
-                    <x-storefront.product-card :product="$product" />
+                    <x-storefront.product-card :product="$product" :wishlistedIds="$wishlistedIds" />
                 @endforeach
             </div>
         </div>
@@ -332,7 +340,7 @@
             />
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($bestSellingProducts->take(4) as $product)
-                    <x-storefront.product-card :product="$product" />
+                    <x-storefront.product-card :product="$product" :wishlistedIds="$wishlistedIds" />
                 @endforeach
             </div>
         </div>
@@ -400,7 +408,7 @@
                 @if($featuredProducts->count())
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         @foreach($featuredProducts->take(4) as $product)
-                            <x-storefront.product-card :product="$product" />
+                            <x-storefront.product-card :product="$product" :wishlistedIds="$wishlistedIds" />
                         @endforeach
                     </div>
                 @else
@@ -444,8 +452,16 @@
                             </div>
                             <div class="p-4">
                                 <h3 class="text-[13px] font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-emerald-600 transition-colors" x-text="product.name"></h3>
-                                <div class="flex items-baseline gap-2 mt-2">
-                                    <span class="text-[17px] font-bold text-gray-900" x-text="'$' + parseFloat(product.price).toFixed(2)"></span>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-[17px] font-bold text-gray-900" x-text="'$' + parseFloat(product.price).toFixed(2)"></span>
+                                        <template x-if="product.compare_at_price && product.compare_at_price > product.price">
+                                            <span class="text-[12px] text-gray-400 line-through" x-text="'$' + parseFloat(product.compare_at_price).toFixed(2)"></span>
+                                        </template>
+                                    </div>
+                                    <template x-if="product.in_stock === false">
+                                        <span class="text-[10px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{{ __('Sold Out') }}</span>
+                                    </template>
                                 </div>
                             </div>
                         </a>
@@ -672,10 +688,35 @@
             return {
                 products: [],
                 init() {
-                    try {
-                        const stored = localStorage.getItem('recently_viewed');
-                        this.products = stored ? JSON.parse(stored).slice(0, 4) : [];
-                    } catch (e) { this.products = []; }
+                    @auth
+                        fetch('/recently-viewed', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.success && d.items.length > 0) {
+                                    this.products = d.items.slice(0, 4);
+                                }
+                            })
+                            .catch(() => {});
+                    @else
+                        try {
+                            const stored = localStorage.getItem('recently_viewed');
+                            this.products = stored ? JSON.parse(stored).slice(0, 4) : [];
+                        } catch (e) { this.products = []; }
+                    @endauth
+                }
+            };
+        }
+
+        function wishlistCount() {
+            return {
+                count: 0,
+                init() {
+                    @auth
+                        fetch('/wishlist/count', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                            .then(r => r.json())
+                            .then(d => { if (d.success) this.count = d.count; })
+                            .catch(() => {});
+                    @endauth
                 }
             };
         }

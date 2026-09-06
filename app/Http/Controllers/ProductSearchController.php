@@ -74,7 +74,11 @@ class ProductSearchController extends Controller
             $activeFilters->push(['key' => 'is_featured', 'label' => __('Featured'), 'value' => '1']);
         }
 
-        return view('search', compact('results', 'categories', 'brands', 'sellers', 'priceRange', 'filters', 'activeFilters'));
+        $wishlistedIds = auth()->check()
+            ? \App\Models\Wishlist::where('user_id', auth()->id())->pluck('product_id')->toArray()
+            : [];
+
+        return view('search', compact('results', 'categories', 'brands', 'sellers', 'priceRange', 'filters', 'activeFilters', 'wishlistedIds'));
     }
 
     public function show(string $slug)
