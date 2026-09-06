@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SystemSettingSeeder::class,
             UserSeeder::class,
+            BulkTestDataSeeder::class,
         ]);
     }
 }

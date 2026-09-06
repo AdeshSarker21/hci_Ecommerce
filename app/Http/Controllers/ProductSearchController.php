@@ -84,7 +84,7 @@ class ProductSearchController extends Controller
             ->where('is_active', true)
             ->with([
                 'seller:id,store_name,store_slug,store_logo,store_banner,average_rating,total_reviews,total_sales,is_featured,store_description,store_description_bn,contact_email,contact_phone,business_address,business_city,business_country,shipping_policy,return_policy,about_us,about_us_bn',
-                'category:id,name,name_bn,slug,description,description_bn,image',
+                'category:id,name,name_bn,slug,description,image',
                 'brand:id,name,name_bn,slug,logo',
                 'images:id,product_id,path,alt_text,sort_order,is_featured',
                 'attributeValues' => function ($q) {

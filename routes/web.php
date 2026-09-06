@@ -29,6 +29,7 @@ use App\Http\Controllers\Seller\SellerSettlementController;
 use App\Http\Controllers\Seller\SellerStaffController;
 use App\Http\Controllers\Seller\SellerWalletController;
 use App\Http\Controllers\Seller\SellerWarehouseController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,18 @@ Route::get('/category/{slug}', [StorefrontCategoryController::class, 'show'])->n
 
 // Public Seller Storefront
 Route::get('/store/{slug}', [StorefrontController::class, 'show'])->name('storefront.show');
+
+// Shopping Cart (guest + authenticated)
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::patch('/cart/{id}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');
+Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+Route::get('/cart/summary', [CartController::class, 'summary'])->name('cart.summary');
+Route::post('/cart/revalidate', [CartController::class, 'revalidate'])->name('cart.revalidate');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
+Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 
 // Admin Panel
 Route::prefix('admin')

@@ -702,7 +702,7 @@
                     this.isWishlisted = !this.isWishlisted;
                 },
                 addToCart() {
-                    this.$dispatch('show-toast', { message: '{{ __('Added to cart') }}' });
+                    Alpine.store('cart').addItem({{ $product->id }}, this.quantity, Object.keys(this.selectedVariants).length > 0 ? this.selectedVariants : null);
                 },
                 buyNow() {
                     this.$dispatch('show-toast', { message: '{{ __('Redirecting to checkout...') }}' });
