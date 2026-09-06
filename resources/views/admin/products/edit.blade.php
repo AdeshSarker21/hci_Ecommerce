@@ -47,9 +47,9 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">Seller</label>
-                            <select name="seller_id"
+                            <select name="seller_id" required
                                     class="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-colors duration-200">
-                                <option value="">Admin / Marketplace</option>
+                                <option value="">Select Seller *</option>
                                 @foreach($sellers as $seller)
                                     <option value="{{ $seller->id }}" {{ old('seller_id', $product->seller_id) == $seller->id ? 'selected' : '' }}>
                                         {{ $seller->store_name }}

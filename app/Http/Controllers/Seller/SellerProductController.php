@@ -6,22 +6,32 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class SellerProductController extends Controller
 {
-    public function index(Request $request)
+    private function authorizeSeller()
     {
         $seller = auth()->user()->seller;
-
         if (!$seller || !$seller->isApproved()) {
+            return null;
+        }
+        return $seller;
+    }
+
+    public function index(Request $request)
+    {
+        $seller = $this->authorizeSeller();
+        if (!$seller) {
             return redirect()->route('seller.dashboard');
         }
 
-        $query = Product::where('seller_id', $seller->id)->with(['category', 'brand']);
+        $query = Product::where('seller_id', $seller->id)
+            ->with(['category', 'brand', 'images' => function ($q) {
+                $q->where('is_featured', true)->limit(1);
+            }]);
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -35,16 +45,46 @@ class SellerProductController extends Controller
             });
         }
 
-        $products = $query->latest()->paginate(15)->withQueryString();
+        if ($categoryId = $request->input('category_id')) {
+            $query->where('category_id', $categoryId);
+        }
 
-        return view('seller.products.index', compact('seller', 'products'));
+        if ($type = $request->input('type')) {
+            $query->where('type', $type);
+        }
+
+        $sort = $request->input('sort', 'newest');
+        $query = match ($sort) {
+            'price_asc' => $query->orderBy('price', 'asc'),
+            'price_desc' => $query->orderBy('price', 'desc'),
+            'name_asc' => $query->orderBy('name', 'asc'),
+            'name_desc' => $query->orderBy('name', 'desc'),
+            'stock_asc' => $query->orderBy('quantity', 'asc'),
+            'stock_desc' => $query->orderBy('quantity', 'desc'),
+            'oldest' => $query->orderBy('created_at', 'asc'),
+            default => $query->latest(),
+        };
+
+        $products = $query->paginate(15)->withQueryString();
+
+        $categories = Category::active()->ordered()->get();
+
+        $stats = [
+            'total' => Product::where('seller_id', $seller->id)->count(),
+            'published' => Product::where('seller_id', $seller->id)->where('status', 'published')->count(),
+            'draft' => Product::where('seller_id', $seller->id)->where('status', 'draft')->count(),
+            'pending_review' => Product::where('seller_id', $seller->id)->where('status', 'pending_review')->count(),
+            'approved' => Product::where('seller_id', $seller->id)->where('status', 'approved')->count(),
+            'rejected' => Product::where('seller_id', $seller->id)->where('status', 'rejected')->count(),
+        ];
+
+        return view('seller.products.index', compact('seller', 'products', 'categories', 'stats'));
     }
 
     public function create()
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
+        $seller = $this->authorizeSeller();
+        if (!$seller) {
             return redirect()->route('seller.dashboard');
         }
 
@@ -57,9 +97,8 @@ class SellerProductController extends Controller
 
     public function store(Request $request)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
+        $seller = $this->authorizeSeller();
+        if (!$seller) {
             return redirect()->route('seller.dashboard');
         }
 
@@ -92,10 +131,6 @@ class SellerProductController extends Controller
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'featured_image_index' => ['nullable', 'integer', 'min:0'],
-            'existing_images' => ['nullable', 'array'],
-            'existing_images.*' => ['integer', 'exists:product_images,id'],
-            'image_alt_texts' => ['nullable', 'array'],
-            'image_alt_texts.*' => ['nullable', 'string', 'max:255'],
         ]);
 
         DB::transaction(function () use ($validated, $request, $seller, &$product) {
@@ -127,34 +162,26 @@ class SellerProductController extends Controller
 
     public function show(Product $product)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
-            return redirect()->route('seller.dashboard');
-        }
-
-        if ($product->seller_id !== $seller->id) {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
             abort(403);
         }
 
-        $product->load(['category', 'brand', 'images']);
+        $product->load(['category', 'brand', 'images', 'attributeValues.attribute', 'moderations' => function ($q) {
+            $q->latest()->limit(5);
+        }]);
 
         return view('seller.products.show', compact('seller', 'product'));
     }
 
     public function edit(Product $product)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
-            return redirect()->route('seller.dashboard');
-        }
-
-        if ($product->seller_id !== $seller->id) {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
             abort(403);
         }
 
-        if (in_array($product->status, ['published'])) {
+        if ($product->status === 'published') {
             return back()->with('error', 'Cannot edit a published product. Unpublish it first.');
         }
 
@@ -169,17 +196,12 @@ class SellerProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
-            return redirect()->route('seller.dashboard');
-        }
-
-        if ($product->seller_id !== $seller->id) {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
             abort(403);
         }
 
-        if (in_array($product->status, ['published'])) {
+        if ($product->status === 'published') {
             return back()->with('error', 'Cannot edit a published product. Unpublish it first.');
         }
 
@@ -235,7 +257,6 @@ class SellerProductController extends Controller
 
             $this->saveAttributeValues($product, $request->input('spec', []));
 
-            // Delete removed images
             if ($request->has('delete_images')) {
                 foreach ($request->input('delete_images', []) as $imageId) {
                     $image = $product->images()->find($imageId);
@@ -254,13 +275,8 @@ class SellerProductController extends Controller
 
     public function submitForReview(Product $product)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
-            return redirect()->route('seller.dashboard');
-        }
-
-        if ($product->seller_id !== $seller->id) {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
             abort(403);
         }
 
@@ -275,19 +291,94 @@ class SellerProductController extends Controller
         return back()->with('success', 'Product submitted for review.');
     }
 
-    public function destroy(Product $product)
+    public function duplicate(Product $product)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
-            return redirect()->route('seller.dashboard');
-        }
-
-        if ($product->seller_id !== $seller->id) {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
             abort(403);
         }
 
-        if (in_array($product->status, ['published'])) {
+        $newProduct = DB::transaction(function () use ($product, $seller) {
+            $newProduct = $product->replicate();
+            $newProduct->name = $product->name . ' (Copy)';
+            $newProduct->name_bn = $product->name_bn ? $product->name_bn . ' (কপি)' : null;
+            $newProduct->slug = null;
+            $newProduct->sku = null;
+            $newProduct->barcode = null;
+            $newProduct->status = 'draft';
+            $newProduct->rejection_reason = null;
+            $newProduct->published_at = null;
+            $newProduct->approved_at = null;
+            $newProduct->is_active = true;
+            $newProduct->is_featured = false;
+            $newProduct->seller_id = $seller->id;
+            $newProduct->save();
+
+            foreach ($product->images as $image) {
+                $newProduct->images()->create([
+                    'path' => $image->path,
+                    'alt_text' => $image->alt_text,
+                    'sort_order' => $image->sort_order,
+                    'is_featured' => $image->is_featured,
+                ]);
+            }
+
+            foreach ($product->attributeValues as $attrValue) {
+                $newProduct->attributeValues()->create([
+                    'attribute_id' => $attrValue->attribute_id,
+                    'value' => $attrValue->value,
+                ]);
+            }
+
+            return $newProduct;
+        });
+
+        return redirect()->route('seller.products.edit', $newProduct)
+            ->with('success', 'Product duplicated successfully. Edit the copy before submitting for review.');
+    }
+
+    public function publish(Product $product)
+    {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
+            abort(403);
+        }
+
+        if ($product->status !== 'approved') {
+            return back()->with('error', 'Only approved products can be published.');
+        }
+
+        $product->publish();
+        $product->logModeration('publish', null, 'approved', 'published');
+
+        return back()->with('success', 'Product "' . $product->name . '" has been published.');
+    }
+
+    public function unpublish(Product $product)
+    {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
+            abort(403);
+        }
+
+        if ($product->status !== 'published') {
+            return back()->with('error', 'Only published products can be unpublished.');
+        }
+
+        $product->unpublish();
+        $product->logModeration('unpublish', null, 'published', 'approved');
+
+        return back()->with('success', 'Product "' . $product->name . '" has been unpublished.');
+    }
+
+    public function destroy(Product $product)
+    {
+        $seller = $this->authorizeSeller();
+        if (!$seller || $product->seller_id !== $seller->id) {
+            abort(403);
+        }
+
+        if ($product->status === 'published') {
             return back()->with('error', 'Cannot delete a published product. Unpublish it first.');
         }
 
@@ -304,9 +395,8 @@ class SellerProductController extends Controller
 
     public function getCategoryAttributes(Category $category)
     {
-        $seller = auth()->user()->seller;
-
-        if (!$seller || !$seller->isApproved()) {
+        $seller = $this->authorizeSeller();
+        if (!$seller) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -360,7 +450,6 @@ class SellerProductController extends Controller
 
     private function handleImageUploads(Product $product, Request $request): void
     {
-        // Upload new images
         if ($request->hasFile('images')) {
             $featuredIndex = $request->input('featured_image_index', 0);
             $altTexts = $request->input('image_alt_texts', []);
@@ -377,7 +466,6 @@ class SellerProductController extends Controller
             }
         }
 
-        // Update existing images (reorder / featured / alt text)
         if ($request->has('existing_images')) {
             $existingIds = $request->input('existing_images', []);
             $featuredIndex = $request->input('featured_image_index', null);

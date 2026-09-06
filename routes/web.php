@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminCommissionController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryAttributeController;
@@ -15,16 +16,21 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductReviewController;
 use App\Http\Controllers\ProductSearchController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\Seller\SellerController;
+use App\Http\Controllers\Seller\SellerCommissionController;
+use App\Http\Controllers\Seller\SellerDashboardController;
 use App\Http\Controllers\Seller\SellerInventoryController;
+use App\Http\Controllers\Seller\SellerOrderController;
 use App\Http\Controllers\Seller\SellerProductController;
+use App\Http\Controllers\Seller\SellerSettlementController;
 use App\Http\Controllers\Seller\SellerStaffController;
+use App\Http\Controllers\Seller\SellerWalletController;
 use App\Http\Controllers\Seller\SellerWarehouseController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', HomeController::class)->name('home');
 
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [WebAuthController::class, 'login'])->middleware(['guest', 'throttle.login']);
@@ -41,6 +47,9 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
 // Public Product Search
 Route::get('/search', [ProductSearchController::class, 'index'])->name('search');
 Route::get('/product/{slug}', [ProductSearchController::class, 'show'])->name('product.show');
+
+// Public Seller Storefront
+Route::get('/store/{slug}', [StorefrontController::class, 'show'])->name('storefront.show');
 
 // Admin Panel
 Route::prefix('admin')
@@ -68,13 +77,27 @@ Route::prefix('admin')
         // Sellers
         Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index')
             ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/pending', [AdminSellerController::class, 'pending'])->name('sellers.pending')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/performance', [AdminSellerController::class, 'performance'])->name('sellers.performance')
+            ->middleware('check.permission:vendors.view,vendors.manage');
         Route::get('/sellers/{seller}', [AdminSellerController::class, 'show'])->name('sellers.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/{seller}/products', [AdminSellerController::class, 'products'])->name('sellers.products')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/{seller}/orders', [AdminSellerController::class, 'orders'])->name('sellers.orders')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/{seller}/finance', [AdminSellerController::class, 'finance'])->name('sellers.finance')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/sellers/{seller}/activity', [AdminSellerController::class, 'activityLog'])->name('sellers.activity')
             ->middleware('check.permission:vendors.view,vendors.manage');
         Route::post('/sellers/{seller}/approve', [AdminSellerController::class, 'approve'])->name('sellers.approve')
             ->middleware('check.permission:vendors.manage');
         Route::post('/sellers/{seller}/reject', [AdminSellerController::class, 'reject'])->name('sellers.reject')
             ->middleware('check.permission:vendors.manage');
         Route::post('/sellers/{seller}/suspend', [AdminSellerController::class, 'suspend'])->name('sellers.suspend')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/sellers/{seller}/activate', [AdminSellerController::class, 'activate'])->name('sellers.activate')
             ->middleware('check.permission:vendors.manage');
 
         // Categories
@@ -218,6 +241,17 @@ Route::prefix('admin')
             ->middleware('check.permission:products.update,products.manage');
         Route::delete('/warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->name('warehouses.destroy')
             ->middleware('check.permission:products.delete,products.manage');
+
+        // Commission Management
+        Route::get('/commission/rules', [AdminCommissionController::class, 'rules'])->name('commission.rules');
+        Route::post('/commission/rules', [AdminCommissionController::class, 'storeRule'])->name('commission.rules.store');
+        Route::put('/commission/rules/{rule}', [AdminCommissionController::class, 'updateRule'])->name('commission.rules.update');
+        Route::delete('/commission/rules/{rule}', [AdminCommissionController::class, 'destroyRule'])->name('commission.rules.destroy');
+        Route::get('/commission/records', [AdminCommissionController::class, 'records'])->name('commission.records');
+        Route::post('/commission/process', [AdminCommissionController::class, 'processOrderCommission'])->name('commission.process');
+        Route::get('/commission/settlements', [AdminCommissionController::class, 'settlements'])->name('commission.settlements');
+        Route::patch('/commission/settlements/{settlement}/complete', [AdminCommissionController::class, 'completeSettlement'])->name('commission.settlements.complete');
+        Route::post('/commission/settlements', [AdminCommissionController::class, 'createSettlement'])->name('commission.settlements.store');
     });
 
 // Seller Dashboard
@@ -226,6 +260,7 @@ Route::prefix('seller')
     ->middleware(['auth', 'ensure.active'])
     ->group(function () {
         Route::get('/', [SellerController::class, 'dashboard'])->name('dashboard');
+        Route::get('/analytics', [SellerDashboardController::class, 'index'])->name('analytics');
         Route::get('/register', [SellerController::class, 'showRegisterForm'])->name('register.show');
         Route::post('/register', [SellerController::class, 'register'])->name('register.store');
         Route::get('/profile/edit', [SellerController::class, 'editProfile'])->name('profile.edit');
@@ -249,6 +284,9 @@ Route::prefix('seller')
         Route::get('/products/{product}/edit', [SellerProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [SellerProductController::class, 'update'])->name('products.update');
         Route::post('/products/{product}/submit', [SellerProductController::class, 'submitForReview'])->name('products.submit');
+        Route::post('/products/{product}/duplicate', [SellerProductController::class, 'duplicate'])->name('products.duplicate');
+        Route::post('/products/{product}/publish', [SellerProductController::class, 'publish'])->name('products.publish');
+        Route::post('/products/{product}/unpublish', [SellerProductController::class, 'unpublish'])->name('products.unpublish');
         Route::delete('/products/{product}', [SellerProductController::class, 'destroy'])->name('products.destroy');
 
         // Category Attributes AJAX
@@ -263,6 +301,42 @@ Route::prefix('seller')
         Route::post('/inventory/{product}/generate-barcode', [SellerInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode');
         Route::post('/inventory/{product}/generate-qr', [SellerInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr');
         Route::get('/inventory/{product}/print', [SellerInventoryController::class, 'printIdentifiers'])->name('inventory.print');
+
+        // Orders
+        Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
+        Route::patch('/orders/{order}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.update-status');
+        Route::patch('/orders/{order}/note', [SellerOrderController::class, 'addNote'])->name('orders.note');
+        Route::patch('/orders/{order}/tracking', [SellerOrderController::class, 'updateTracking'])->name('orders.tracking');
+        Route::post('/orders/bulk-update', [SellerOrderController::class, 'bulkUpdate'])->name('orders.bulk-update');
+
+        // Reviews (placeholder)
+        Route::get('/reviews', function () {
+            return redirect()->route('seller.dashboard')->with('info', 'Reviews management coming soon.');
+        })->name('reviews.index');
+
+        // Customers (placeholder)
+        Route::get('/customers', function () {
+            return redirect()->route('seller.dashboard')->with('info', 'Customer management coming soon.');
+        })->name('customers.index');
+
+        // Sales & Earnings (placeholder)
+        Route::get('/sales', function () {
+            return redirect()->route('seller.dashboard')->with('info', 'Sales & earnings coming soon.');
+        })->name('sales.index');
+
+        // Commission
+        Route::get('/commission', [SellerCommissionController::class, 'index'])->name('commission.index');
+        Route::get('/earnings', [SellerCommissionController::class, 'earnings'])->name('commission.earnings');
+
+        // Wallet
+        Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
+        Route::get('/withdrawals', [SellerSettlementController::class, 'index'])->name('withdrawals.index');
+
+        // Notifications (placeholder)
+        Route::get('/notifications', function () {
+            return redirect()->route('seller.dashboard')->with('info', 'Notifications center coming soon.');
+        })->name('notifications.index');
 
         // Warehouses
         Route::get('/warehouses', [SellerWarehouseController::class, 'index'])->name('warehouses.index');

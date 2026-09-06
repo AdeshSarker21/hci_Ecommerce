@@ -23,3 +23,28 @@
     background-color: #e5e7eb;
     border-radius: 4px;
 }
+
+/* Frontend / Storefront Styles */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+/* Seller Dashboard Styles */
+.seller-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+.seller-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.seller-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.seller-sidebar::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0;
+    border-radius: 4px;
+}
+.seller-sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: #cbd5e1;
+}

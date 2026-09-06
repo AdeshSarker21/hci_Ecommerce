@@ -90,7 +90,16 @@
 
                 @if(auth()->user()->hasAnyPermission(['vendors.view', 'vendors.manage']))
                     <x-admin.nav-section label="Marketplace" />
-                    <x-admin.nav-item icon="store" label="Vendors" href="{{ route('admin.sellers.index') }}" active="{{ $active }}" slug="vendors" />
+                    <x-admin.nav-item icon="store" label="All Sellers" href="{{ route('admin.sellers.index') }}" active="{{ $active }}" slug="sellers" />
+                    <x-admin.nav-item icon="clock" label="Seller Approvals" href="{{ route('admin.sellers.pending') }}" active="{{ $active }}" slug="sellers-approvals" />
+                    <x-admin.nav-item icon="chart-bar" label="Seller Performance" href="{{ route('admin.sellers.performance') }}" active="{{ $active }}" slug="sellers-performance" />
+                @endif
+
+                @if(auth()->user()->hasAnyPermission(['vendors.view', 'vendors.manage']))
+                    <x-admin.nav-section label="Seller Finance" />
+                    <x-admin.nav-item icon="calculator" label="Commissions" href="{{ route('admin.commission.rules') }}" active="{{ $active }}" slug="commission-rules" />
+                    <x-admin.nav-item icon="check-circle" label="Settlements" href="{{ route('admin.commission.settlements') }}" active="{{ $active }}" slug="commission-settlements" />
+                    <x-admin.nav-item icon="credit-card" label="Withdrawals" href="{{ route('admin.commission.records') }}" active="{{ $active }}" slug="commission-records" />
                 @endif
 
                 @if(auth()->user()->hasAnyPermission(['settings.view', 'settings.manage']))
@@ -217,6 +226,7 @@
         </div>
     </div>
 
+    @stack('scripts')
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </body>
 </html>

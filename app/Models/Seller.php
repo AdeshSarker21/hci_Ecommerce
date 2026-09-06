@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -16,12 +17,18 @@ class Seller extends Model
 
     protected $fillable = [
         'user_id', 'store_name', 'store_slug', 'store_description',
+        'store_description_bn', 'store_tagline', 'store_tagline_bn',
         'store_logo', 'store_banner', 'contact_email', 'contact_phone',
         'contact_website', 'business_address', 'business_city',
         'business_state', 'business_country', 'business_postal_code',
         'business_registration_number', 'tax_id', 'status',
         'rejection_reason', 'commission_rate', 'is_featured',
         'is_active', 'approved_at',
+        'shipping_policy', 'shipping_policy_bn',
+        'return_policy', 'return_policy_bn',
+        'about_us', 'about_us_bn',
+        'facebook_url', 'instagram_url', 'youtube_url',
+        'average_rating', 'total_reviews', 'total_sales',
     ];
 
     protected function casts(): array
@@ -31,6 +38,9 @@ class Seller extends Model
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
             'approved_at' => 'datetime',
+            'average_rating' => 'decimal:2',
+            'total_reviews' => 'integer',
+            'total_sales' => 'integer',
         ];
     }
 
@@ -75,6 +85,31 @@ class Seller extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+    public function commissionRecords(): HasMany
+    {
+        return $this->hasMany(CommissionRecord::class);
+    }
+
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(Settlement::class);
+    }
+
+    public function commissionRules(): HasMany
+    {
+        return $this->hasMany(CommissionRule::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function scopeActive($query)

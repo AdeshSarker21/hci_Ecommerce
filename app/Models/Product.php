@@ -101,6 +101,13 @@ class Product extends Model
         return $this->hasMany(ProductAttributeValue::class);
     }
 
+    public function orders(): BelongsToMany
+    {
+        return $this->belongsToMany(Order::class, 'order_items')
+            ->withPivot(['quantity', 'unit_price', 'total'])
+            ->withTimestamps();
+    }
+
     public function inventoryTransactions(): HasMany
     {
         return $this->hasMany(InventoryTransaction::class);
