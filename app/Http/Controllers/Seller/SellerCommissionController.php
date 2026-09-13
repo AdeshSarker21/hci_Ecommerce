@@ -56,7 +56,7 @@ class SellerCommissionController extends Controller
 
         $monthlyEarnings = CommissionRecord::where('seller_id', $seller->id)
             ->where('status', '!=', 'cancelled')
-            ->selectRaw("strftime('%Y-%m', created_at) as month, SUM(seller_earnings) as earnings, COUNT(*) as orders")
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(seller_earnings) as earnings, COUNT(*) as orders")
             ->groupBy('month')
             ->orderByDesc('month')
             ->limit(12)

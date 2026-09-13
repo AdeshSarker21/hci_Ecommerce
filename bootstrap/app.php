@@ -32,7 +32,19 @@ return Application::configure(basePath: dirname(__DIR__))
             return route('login');
         });
 
-        $middleware->redirectUsersTo('/dashboard');
+        $middleware->redirectUsersTo(function (Request $request) {
+            $user = $request->user();
+            if (!$user) {
+                return '/dashboard';
+            }
+            if ($user->hasAnyRole(['super-admin', 'admin', 'manager', 'product-manager'])) {
+                return '/admin';
+            }
+            if ($user->hasAnyRole(['seller', 'seller-staff'])) {
+                return '/seller';
+            }
+            return '/dashboard';
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

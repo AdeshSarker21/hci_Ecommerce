@@ -45,6 +45,20 @@
                     <p class="text-sm text-gray-500 mt-1.5">Start your journey with us today</p>
                 </div>
 
+                @if(!empty($intendedUrl) && str_contains($intendedUrl, '/checkout'))
+                    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-semibold text-amber-800">Account required for checkout</p>
+                                <p class="text-sm text-amber-700 mt-1">Create an account to complete your purchase. Your cart items will be preserved.</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('register') }}" class="space-y-5">
                     @csrf
                     <div>

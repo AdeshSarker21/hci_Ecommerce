@@ -4,7 +4,7 @@
     @push('scripts')
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
+        "@@context": "https://schema.org",
         "@type": "Product",
         "name": {{ json_encode($name) }},
         "description": {{ json_encode($description ?? $name) }},
@@ -749,10 +749,13 @@
                     });
                 },
                 addToCart() {
-                    Alpine.store('cart').addItem({{ $product->id }}, this.quantity, Object.keys(this.selectedVariants).length > 0 ? this.selectedVariants : null);
+                    const variants = Object.keys(this.selectedVariants).length > 0 ? this.selectedVariants : null;
+                    Alpine.store('cart').addItem({{ $product->id }}, this.quantity, variants);
                 },
-                buyNow() {
-                    this.$dispatch('show-toast', { message: '{{ __('Redirecting to checkout...') }}' });
+                async buyNow() {
+                    const variants = Object.keys(this.selectedVariants).length > 0 ? this.selectedVariants : null;
+                    await Alpine.store('cart').addItem({{ $product->id }}, this.quantity, variants);
+                    window.location.href = '/checkout';
                 }
             };
         }

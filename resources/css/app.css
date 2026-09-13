@@ -30,6 +30,42 @@
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 
+/* Account Sidebar Styles */
+.account-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+.account-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.account-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.account-sidebar::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 4px;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.15s ease;
+}
+.nav-item:hover {
+    color: #059669;
+    background-color: #ecfdf5;
+}
+.nav-item.active {
+    color: #059669;
+    background-color: #ecfdf5;
+    font-weight: 600;
+}
+
 /* Seller Dashboard Styles */
 .seller-sidebar {
     scrollbar-width: thin;

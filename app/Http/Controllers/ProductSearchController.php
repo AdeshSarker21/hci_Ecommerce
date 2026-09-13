@@ -160,7 +160,7 @@ class ProductSearchController extends Controller
         }
 
         return view('product.show', compact(
-            'product', 'name', 'description', 'brandName', 'categoryName',
+            'product', 'name', 'description', 'brandName', 'categoryName', 'locale',
             'breadcrumbs', 'reviews', 'ratingDistribution', 'totalReviews', 'averageRating',
             'variantAttributes', 'relatedProducts', 'recommendedProducts'
         ));

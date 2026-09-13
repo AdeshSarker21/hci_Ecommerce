@@ -1,7 +1,15 @@
 @props(['title' => 'Home', 'description' => null, 'image' => null])
 
 @php
-    $categories = \App\Models\Category::whereNull('parent_id')->active()->ordered()->limit(12)->get();
+    $categories = \App\Models\Category::whereNull('parent_id')
+        ->active()
+        ->ordered()
+        ->limit(12)
+        ->with(['children' => function ($q) {
+            $q->active()->ordered()->limit(10);
+        }])
+        ->get();
+    $brands = \App\Models\Brand::active()->ordered()->limit(10)->get();
     $metaTitle = $title . ' - ' . config('app.name');
     $metaDescription = $description ?? __('Your premium destination for quality products from verified sellers worldwide.');
     $metaImage = $image ?? null;
@@ -58,12 +66,14 @@
     </style>
 </head>
 <body class="bg-[#fafafa] text-gray-900 antialiased">
+    <x-storefront.header :categories="$categories" :brands="$brands" />
     {{ $slot }}
 
     <x-toast />
     <x-cart.mini-cart />
 
     @stack('scripts')
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
 </body>

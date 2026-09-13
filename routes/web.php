@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductReviewController;
 use App\Http\Controllers\ProductSearchController;
+use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\StorefrontReviewController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\CategoryController as StorefrontCategoryController;
@@ -30,6 +31,8 @@ use App\Http\Controllers\Seller\SellerStaffController;
 use App\Http\Controllers\Seller\SellerWalletController;
 use App\Http\Controllers\Seller\SellerWarehouseController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -43,9 +46,36 @@ Route::post('/register', [WebAuthController::class, 'register'])->middleware('gu
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth', 'ensure.active'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [CustomerAccountController::class, 'dashboard'])->name('dashboard');
+
+    // Customer Account
+    Route::prefix('account')->name('account.')->group(function () {
+        Route::get('/profile', [CustomerAccountController::class, 'profile'])->name('profile');
+        Route::put('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/password', [CustomerAccountController::class, 'password'])->name('password');
+        Route::put('/password', [CustomerAccountController::class, 'updatePassword'])->name('password.update');
+        Route::get('/addresses', [CustomerAccountController::class, 'addresses'])->name('addresses');
+        Route::post('/addresses', [CustomerAccountController::class, 'storeAddress'])->name('addresses.store');
+        Route::put('/addresses/{id}', [CustomerAccountController::class, 'updateAddress'])->name('addresses.update');
+        Route::delete('/addresses/{id}', [CustomerAccountController::class, 'deleteAddress'])->name('addresses.delete');
+        Route::post('/addresses/{id}/default', [CustomerAccountController::class, 'setDefaultAddress'])->name('addresses.default');
+        Route::get('/orders', [CustomerAccountController::class, 'orders'])->name('orders');
+        Route::get('/orders/{order}', [CustomerAccountController::class, 'showOrder'])->name('orders.show');
+        Route::get('/wishlist', [CustomerAccountController::class, 'wishlist'])->name('wishlist');
+        Route::get('/recently-viewed', [CustomerAccountController::class, 'recentlyViewed'])->name('recently-viewed');
+        Route::get('/reviews', [CustomerAccountController::class, 'reviews'])->name('reviews');
+        Route::get('/notifications', [CustomerAccountController::class, 'notifications'])->name('notifications');
+        Route::get('/wallet', [CustomerAccountController::class, 'wallet'])->name('wallet');
+        Route::get('/settings', [CustomerAccountController::class, 'settings'])->name('settings');
+        Route::put('/settings', [CustomerAccountController::class, 'updateSettings'])->name('settings.update');
+    });
+
+    // Legacy customer orders routes (redirect to account)
+    Route::prefix('account/orders-old')->name('account.orders-old.')->group(function () {
+        Route::get('/', [CustomerOrderController::class, 'index'])->name('index');
+        Route::get('/{order}', [CustomerOrderController::class, 'show'])->name('show');
+        Route::get('/{order}/confirmation', [CustomerOrderController::class, 'confirmation'])->name('confirmation');
+    });
 });
 
 // Public Product Search
@@ -72,6 +102,17 @@ Route::get('/cart/summary', [CartController::class, 'summary'])->name('cart.summ
 Route::post('/cart/revalidate', [CartController::class, 'revalidate'])->name('cart.revalidate');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
 Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+
+// Checkout (authenticated only)
+Route::middleware(['auth', 'ensure.active'])->prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', [CheckoutController::class, 'index'])->name('index');
+    Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->name('place-order');
+    Route::get('/validate-cart', [CheckoutController::class, 'validateCart'])->name('validate-cart');
+    Route::post('/address', [CheckoutController::class, 'storeAddress'])->name('address.store');
+    Route::put('/address/{id}', [CheckoutController::class, 'updateAddress'])->name('address.update');
+    Route::delete('/address/{id}', [CheckoutController::class, 'deleteAddress'])->name('address.delete');
+    Route::post('/address/{id}/default', [CheckoutController::class, 'setDefaultAddress'])->name('address.default');
+});
 
 // Wishlist (authenticated only)
 Route::middleware(['auth', 'ensure.active'])->prefix('wishlist')->name('wishlist.')->group(function () {
@@ -299,91 +340,96 @@ Route::prefix('seller')
     ->name('seller.')
     ->middleware(['auth', 'ensure.active'])
     ->group(function () {
-        Route::get('/', [SellerController::class, 'dashboard'])->name('dashboard');
-        Route::get('/analytics', [SellerDashboardController::class, 'index'])->name('analytics');
+        // Seller registration - accessible to any authenticated user
         Route::get('/register', [SellerController::class, 'showRegisterForm'])->name('register.show');
         Route::post('/register', [SellerController::class, 'register'])->name('register.store');
-        Route::get('/profile/edit', [SellerController::class, 'editProfile'])->name('profile.edit');
-        Route::put('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
 
-        // Staff Management
-        Route::get('/staff', [SellerStaffController::class, 'index'])->name('staff.index');
-        Route::get('/staff/create', [SellerStaffController::class, 'create'])->name('staff.create');
-        Route::post('/staff', [SellerStaffController::class, 'store'])->name('staff.store');
-        Route::get('/staff/{staff}', [SellerStaffController::class, 'show'])->name('staff.show');
-        Route::get('/staff/{staff}/edit', [SellerStaffController::class, 'edit'])->name('staff.edit');
-        Route::put('/staff/{staff}', [SellerStaffController::class, 'update'])->name('staff.update');
-        Route::post('/staff/{staff}/toggle-status', [SellerStaffController::class, 'toggleStatus'])->name('staff.toggle-status');
-        Route::delete('/staff/{staff}', [SellerStaffController::class, 'destroy'])->name('staff.destroy');
+        // Seller dashboard and management - restricted to seller/seller-staff roles
+        Route::middleware('check.role:seller,seller-staff')->group(function () {
+            Route::get('/', [SellerController::class, 'dashboard'])->name('dashboard');
+            Route::get('/analytics', [SellerDashboardController::class, 'index'])->name('analytics');
+            Route::get('/profile/edit', [SellerController::class, 'editProfile'])->name('profile.edit');
+            Route::put('/profile', [SellerController::class, 'updateProfile'])->name('profile.update');
 
-        // Products
-        Route::get('/products', [SellerProductController::class, 'index'])->name('products.index');
-        Route::get('/products/create', [SellerProductController::class, 'create'])->name('products.create');
-        Route::post('/products', [SellerProductController::class, 'store'])->name('products.store');
-        Route::get('/products/{product}', [SellerProductController::class, 'show'])->name('products.show');
-        Route::get('/products/{product}/edit', [SellerProductController::class, 'edit'])->name('products.edit');
-        Route::put('/products/{product}', [SellerProductController::class, 'update'])->name('products.update');
-        Route::post('/products/{product}/submit', [SellerProductController::class, 'submitForReview'])->name('products.submit');
-        Route::post('/products/{product}/duplicate', [SellerProductController::class, 'duplicate'])->name('products.duplicate');
-        Route::post('/products/{product}/publish', [SellerProductController::class, 'publish'])->name('products.publish');
-        Route::post('/products/{product}/unpublish', [SellerProductController::class, 'unpublish'])->name('products.unpublish');
-        Route::delete('/products/{product}', [SellerProductController::class, 'destroy'])->name('products.destroy');
+            // Staff Management
+            Route::get('/staff', [SellerStaffController::class, 'index'])->name('staff.index');
+            Route::get('/staff/create', [SellerStaffController::class, 'create'])->name('staff.create');
+            Route::post('/staff', [SellerStaffController::class, 'store'])->name('staff.store');
+            Route::get('/staff/{staff}', [SellerStaffController::class, 'show'])->name('staff.show');
+            Route::get('/staff/{staff}/edit', [SellerStaffController::class, 'edit'])->name('staff.edit');
+            Route::put('/staff/{staff}', [SellerStaffController::class, 'update'])->name('staff.update');
+            Route::post('/staff/{staff}/toggle-status', [SellerStaffController::class, 'toggleStatus'])->name('staff.toggle-status');
+            Route::delete('/staff/{staff}', [SellerStaffController::class, 'destroy'])->name('staff.destroy');
 
-        // Category Attributes AJAX
-        Route::get('/category-attributes/{category}', [SellerProductController::class, 'getCategoryAttributes'])->name('category-attributes.get');
+            // Products
+            Route::get('/products', [SellerProductController::class, 'index'])->name('products.index');
+            Route::get('/products/create', [SellerProductController::class, 'create'])->name('products.create');
+            Route::post('/products', [SellerProductController::class, 'store'])->name('products.store');
+            Route::get('/products/{product}', [SellerProductController::class, 'show'])->name('products.show');
+            Route::get('/products/{product}/edit', [SellerProductController::class, 'edit'])->name('products.edit');
+            Route::put('/products/{product}', [SellerProductController::class, 'update'])->name('products.update');
+            Route::post('/products/{product}/submit', [SellerProductController::class, 'submitForReview'])->name('products.submit');
+            Route::post('/products/{product}/duplicate', [SellerProductController::class, 'duplicate'])->name('products.duplicate');
+            Route::post('/products/{product}/publish', [SellerProductController::class, 'publish'])->name('products.publish');
+            Route::post('/products/{product}/unpublish', [SellerProductController::class, 'unpublish'])->name('products.unpublish');
+            Route::delete('/products/{product}', [SellerProductController::class, 'destroy'])->name('products.destroy');
 
-        // Inventory
-        Route::get('/inventory', [SellerInventoryController::class, 'index'])->name('inventory.index');
-        Route::get('/inventory/{product}', [SellerInventoryController::class, 'show'])->name('inventory.show');
-        Route::post('/inventory/{product}/adjust', [SellerInventoryController::class, 'adjust'])->name('inventory.adjust');
-        Route::post('/inventory/{product}/add-stock', [SellerInventoryController::class, 'addStock'])->name('inventory.add-stock');
-        Route::post('/inventory/{product}/remove-stock', [SellerInventoryController::class, 'removeStock'])->name('inventory.remove-stock');
-        Route::post('/inventory/{product}/generate-barcode', [SellerInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode');
-        Route::post('/inventory/{product}/generate-qr', [SellerInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr');
-        Route::get('/inventory/{product}/print', [SellerInventoryController::class, 'printIdentifiers'])->name('inventory.print');
+            // Category Attributes AJAX
+            Route::get('/category-attributes/{category}', [SellerProductController::class, 'getCategoryAttributes'])->name('category-attributes.get');
 
-        // Orders
-        Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
-        Route::patch('/orders/{order}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.update-status');
-        Route::patch('/orders/{order}/note', [SellerOrderController::class, 'addNote'])->name('orders.note');
-        Route::patch('/orders/{order}/tracking', [SellerOrderController::class, 'updateTracking'])->name('orders.tracking');
-        Route::post('/orders/bulk-update', [SellerOrderController::class, 'bulkUpdate'])->name('orders.bulk-update');
+            // Inventory
+            Route::get('/inventory', [SellerInventoryController::class, 'index'])->name('inventory.index');
+            Route::get('/inventory/{product}', [SellerInventoryController::class, 'show'])->name('inventory.show');
+            Route::post('/inventory/{product}/adjust', [SellerInventoryController::class, 'adjust'])->name('inventory.adjust');
+            Route::post('/inventory/{product}/add-stock', [SellerInventoryController::class, 'addStock'])->name('inventory.add-stock');
+            Route::post('/inventory/{product}/remove-stock', [SellerInventoryController::class, 'removeStock'])->name('inventory.remove-stock');
+            Route::post('/inventory/{product}/generate-barcode', [SellerInventoryController::class, 'generateBarcode'])->name('inventory.generate-barcode');
+            Route::post('/inventory/{product}/generate-qr', [SellerInventoryController::class, 'generateQrCode'])->name('inventory.generate-qr');
+            Route::get('/inventory/{product}/print', [SellerInventoryController::class, 'printIdentifiers'])->name('inventory.print');
 
-        // Reviews (placeholder)
-        Route::get('/reviews', function () {
-            return redirect()->route('seller.dashboard')->with('info', 'Reviews management coming soon.');
-        })->name('reviews.index');
+            // Orders
+            Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
+            Route::patch('/orders/{order}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.update-status');
+            Route::patch('/orders/{order}/note', [SellerOrderController::class, 'addNote'])->name('orders.note');
+            Route::patch('/orders/{order}/tracking', [SellerOrderController::class, 'updateTracking'])->name('orders.tracking');
+            Route::post('/orders/bulk-update', [SellerOrderController::class, 'bulkUpdate'])->name('orders.bulk-update');
 
-        // Customers (placeholder)
-        Route::get('/customers', function () {
-            return redirect()->route('seller.dashboard')->with('info', 'Customer management coming soon.');
-        })->name('customers.index');
+            // Reviews (placeholder)
+            Route::get('/reviews', function () {
+                return redirect()->route('seller.dashboard')->with('info', 'Reviews management coming soon.');
+            })->name('reviews.index');
 
-        // Sales & Earnings (placeholder)
-        Route::get('/sales', function () {
-            return redirect()->route('seller.dashboard')->with('info', 'Sales & earnings coming soon.');
-        })->name('sales.index');
+            // Customers (placeholder)
+            Route::get('/customers', function () {
+                return redirect()->route('seller.dashboard')->with('info', 'Customer management coming soon.');
+            })->name('customers.index');
 
-        // Commission
-        Route::get('/commission', [SellerCommissionController::class, 'index'])->name('commission.index');
-        Route::get('/earnings', [SellerCommissionController::class, 'earnings'])->name('commission.earnings');
+            // Sales & Earnings (placeholder)
+            Route::get('/sales', function () {
+                return redirect()->route('seller.dashboard')->with('info', 'Sales & earnings coming soon.');
+            })->name('sales.index');
 
-        // Wallet
-        Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
-        Route::get('/withdrawals', [SellerSettlementController::class, 'index'])->name('withdrawals.index');
+            // Commission
+            Route::get('/commission', [SellerCommissionController::class, 'index'])->name('commission.index');
+            Route::get('/earnings', [SellerCommissionController::class, 'earnings'])->name('commission.earnings');
 
-        // Notifications (placeholder)
-        Route::get('/notifications', function () {
-            return redirect()->route('seller.dashboard')->with('info', 'Notifications center coming soon.');
-        })->name('notifications.index');
+            // Wallet
+            Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
+            Route::get('/withdrawals', [SellerSettlementController::class, 'index'])->name('withdrawals.index');
 
-        // Warehouses
-        Route::get('/warehouses', [SellerWarehouseController::class, 'index'])->name('warehouses.index');
-        Route::get('/warehouses/create', [SellerWarehouseController::class, 'create'])->name('warehouses.create');
-        Route::post('/warehouses', [SellerWarehouseController::class, 'store'])->name('warehouses.store');
-        Route::get('/warehouses/{warehouse}', [SellerWarehouseController::class, 'show'])->name('warehouses.show');
-        Route::get('/warehouses/{warehouse}/edit', [SellerWarehouseController::class, 'edit'])->name('warehouses.edit');
-        Route::put('/warehouses/{warehouse}', [SellerWarehouseController::class, 'update'])->name('warehouses.update');
-        Route::delete('/warehouses/{warehouse}', [SellerWarehouseController::class, 'destroy'])->name('warehouses.destroy');
+            // Notifications (placeholder)
+            Route::get('/notifications', function () {
+                return redirect()->route('seller.dashboard')->with('info', 'Notifications center coming soon.');
+            })->name('notifications.index');
+
+            // Warehouses
+            Route::get('/warehouses', [SellerWarehouseController::class, 'index'])->name('warehouses.index');
+            Route::get('/warehouses/create', [SellerWarehouseController::class, 'create'])->name('warehouses.create');
+            Route::post('/warehouses', [SellerWarehouseController::class, 'store'])->name('warehouses.store');
+            Route::get('/warehouses/{warehouse}', [SellerWarehouseController::class, 'show'])->name('warehouses.show');
+            Route::get('/warehouses/{warehouse}/edit', [SellerWarehouseController::class, 'edit'])->name('warehouses.edit');
+            Route::put('/warehouses/{warehouse}', [SellerWarehouseController::class, 'update'])->name('warehouses.update');
+            Route::delete('/warehouses/{warehouse}', [SellerWarehouseController::class, 'destroy'])->name('warehouses.destroy');
+        });
     });

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -56,6 +57,16 @@ class User extends Authenticatable
     public function recentlyViewedItems()
     {
         return $this->hasMany(RecentlyViewed::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class)->latest();
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class)->latest();
     }
 
     public function isSeller(): bool

@@ -82,7 +82,8 @@ class SellerOrderController extends Controller
 
         $order->load([
             'user:id,name,email,phone',
-            'items.product:id,name,slug,sku,price,image',
+            'items.product:id,name,slug,sku,price',
+            'items.product.images:id,product_id,path,is_featured',
             'statusHistory.user:id,name',
         ]);
 

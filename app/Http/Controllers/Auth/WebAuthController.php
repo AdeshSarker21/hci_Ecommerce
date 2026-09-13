@@ -4,16 +4,24 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
 
 class WebAuthController extends Controller
 {
-    public function showLogin()
+    public function __construct(
+        protected CartService $cart,
+    ) {}
+
+    public function showLogin(Request $request)
     {
-        return view('auth.login');
+        return view('auth.login', [
+            'intendedUrl' => $request->query('intended'),
+        ]);
     }
 
     public function login(Request $request)
@@ -44,12 +52,16 @@ class WebAuthController extends Controller
 
         app(\App\Services\RecentlyViewedService::class)->mergeGuestData($user->id);
 
-        return redirect()->intended(route('dashboard'));
+        $this->cart->mergeGuestCartToUser($user->id);
+
+        return redirect()->intended($this->redirectToRole($user));
     }
 
-    public function showRegister()
+    public function showRegister(Request $request)
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'intendedUrl' => $request->query('intended'),
+        ]);
     }
 
     public function register(Request $request)
@@ -79,7 +91,9 @@ class WebAuthController extends Controller
 
         app(\App\Services\RecentlyViewedService::class)->mergeGuestData($user->id);
 
-        return redirect()->route('dashboard');
+        $this->cart->mergeGuestCartToUser($user->id);
+
+        return redirect()->intended($this->redirectToRole($user));
     }
 
     public function logout(Request $request)
@@ -89,5 +103,36 @@ class WebAuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /**
+     * Determine redirect path based on user role.
+     */
+    protected function redirectToRole(User $user): string
+    {
+        if ($user->hasAnyRole(['super-admin', 'admin', 'manager', 'product-manager'])) {
+            return route('admin.dashboard');
+        }
+
+        if ($user->hasAnyRole(['seller', 'seller-staff'])) {
+            return route('seller.dashboard');
+        }
+
+        return route('dashboard');
+    }
+
+    /**
+     * Validate that a URL is safe for redirect (same host, not external).
+     */
+    protected function isValidRedirectUrl(?string $url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        $currentHost = request()->getHost();
+
+        return $host && $host === $currentHost;
     }
 }
