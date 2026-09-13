@@ -7,8 +7,10 @@ use App\Models\CommissionRecord;
 use App\Models\CommissionRule;
 use App\Models\Settlement;
 use App\Models\Seller;
+use App\Models\Wallet;
 use App\Services\CommissionService;
 use App\Services\SettlementService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -138,6 +140,13 @@ class AdminCommissionController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
+        $wallet = Wallet::where('seller_id', $validated['seller_id'])->first();
+        $pendingBalance = $wallet ? (float) $wallet->pending_balance : 0;
+
+        if ($validated['amount'] > $pendingBalance) {
+            return back()->withErrors(['amount' => 'Amount exceeds pending balance of $' . number_format($pendingBalance, 2) . '.']);
+        }
+
         $settlement = app(SettlementService::class)->createSettlement(
             $validated['seller_id'],
             $validated['amount'],
@@ -149,5 +158,19 @@ class AdminCommissionController extends Controller
         }
 
         return back()->with('success', "Settlement #{$settlement->settlement_number} created.");
+    }
+
+    public function sellerWalletInfo(Request $request): JsonResponse
+    {
+        $request->validate(['seller_id' => 'required|exists:sellers,id']);
+
+        $wallet = Wallet::where('seller_id', $request->seller_id)->first();
+
+        return response()->json([
+            'pending_balance' => $wallet ? (float) $wallet->pending_balance : 0,
+            'available_balance' => $wallet ? (float) $wallet->available_balance : 0,
+            'total_earned' => $wallet ? (float) $wallet->total_earned : 0,
+            'withdrawn_amount' => $wallet ? (float) $wallet->withdrawn_amount : 0,
+        ]);
     }
 }

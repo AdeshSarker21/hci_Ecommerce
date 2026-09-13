@@ -97,9 +97,22 @@
 
                 @if(auth()->user()->hasAnyPermission(['vendors.view', 'vendors.manage']))
                     <x-admin.nav-section label="Seller Finance" />
+                    <x-admin.nav-item icon="credit-card" label="Seller Payments" href="{{ route('admin.seller-payments.index') }}" active="{{ $active }}" slug="seller-payments" />
+                    <x-admin.nav-item icon="truck" label="Courier Collections" href="{{ route('admin.courier-collections.index') }}" active="{{ $active }}" slug="courier-collections" />
                     <x-admin.nav-item icon="calculator" label="Commissions" href="{{ route('admin.commission.rules') }}" active="{{ $active }}" slug="commission-rules" />
                     <x-admin.nav-item icon="check-circle" label="Settlements" href="{{ route('admin.commission.settlements') }}" active="{{ $active }}" slug="commission-settlements" />
-                    <x-admin.nav-item icon="credit-card" label="Withdrawals" href="{{ route('admin.commission.records') }}" active="{{ $active }}" slug="commission-records" />
+                    <x-admin.nav-item icon="chart-bar" label="Withdrawals" href="{{ route('admin.commission.records') }}" active="{{ $active }}" slug="commission-records" />
+                @endif
+
+                @if(auth()->user()->hasAnyPermission(['vendors.view', 'vendors.manage']))
+                    <x-admin.nav-section label="Courier Management" />
+                    <x-admin.nav-item icon="truck" label="All Couriers" href="{{ route('admin.couriers.index') }}" active="{{ $active }}" slug="couriers" />
+                    <x-admin.nav-item icon="plus-circle" label="Add Courier" href="{{ route('admin.couriers.create') }}" active="{{ $active }}" slug="couriers-create" />
+                    <x-admin.nav-item icon="cog" label="API Settings" href="{{ route('admin.couriers.api-settings') }}" active="{{ $active }}" slug="courier-api" />
+                    <x-admin.nav-item icon="radio" label="Webhooks" href="{{ route('admin.courier-webhooks.index') }}" active="{{ $active }}" slug="courier-webhooks" />
+                    <x-admin.nav-item icon="cube" label="Shipments" href="{{ route('admin.shipments.index') }}" active="{{ $active }}" slug="shipments" />
+                    <x-admin.nav-item icon="search" label="Tracking" href="{{ route('admin.shipments.tracking') }}" active="{{ $active }}" slug="tracking" />
+                    <x-admin.nav-item icon="chart-bar" label="Delivery Status" href="{{ route('admin.shipments.delivery-status') }}" active="{{ $active }}" slug="delivery-status" />
                 @endif
 
                 @if(auth()->user()->hasAnyPermission(['settings.view', 'settings.manage']))

@@ -420,6 +420,146 @@
         </div>
     </div>
 
+    {{-- Finance Overview --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+        {{-- Earnings Summary --}}
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-[14px] font-semibold text-slate-900">Earnings Summary</h3>
+                <a href="{{ route('seller.commission.earnings') }}" class="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium">View All</a>
+            </div>
+            <div class="p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] text-slate-500">Total Commission</span>
+                    <span class="text-[13px] font-semibold text-red-600">${{ number_format($totalCommission, 2) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] text-slate-500">Total Earnings</span>
+                    <span class="text-[13px] font-semibold text-emerald-600">${{ number_format($totalEarnings, 2) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] text-slate-500">Pending Earnings</span>
+                    <span class="text-[13px] font-semibold text-amber-600">${{ number_format($pendingPayout, 2) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] text-slate-500">Available Balance</span>
+                    <span class="text-[13px] font-semibold text-blue-600">${{ number_format($availableBalance, 2) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] text-slate-500">Withdrawn</span>
+                    <span class="text-[13px] font-semibold text-slate-700">${{ number_format($withdrawnAmount, 2) }}</span>
+                </div>
+                <div class="pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[12px] text-slate-500">Total Settled</span>
+                        <span class="text-[13px] font-bold text-green-600">${{ number_format($totalSettled, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Seller Payment Lifecycle --}}
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-[14px] font-semibold text-slate-900">Payment Status Breakdown</h3>
+            </div>
+            <div class="p-4 space-y-2.5">
+                @php
+                    $lifecycleStatuses = [
+                        'pending_collection' => ['label' => 'Pending Collection', 'color' => 'amber', 'icon' => 'clock'],
+                        'collected_by_courier' => ['label' => 'Collected by Courier', 'color' => 'blue', 'icon' => 'truck'],
+                        'awaiting_settlement' => ['label' => 'Awaiting Settlement', 'color' => 'purple', 'icon' => 'hourglass'],
+                        'available_for_payout' => ['label' => 'Available for Payout', 'color' => 'emerald', 'icon' => 'check'],
+                        'payout_processing' => ['label' => 'Payout Processing', 'color' => 'indigo', 'icon' => 'refresh'],
+                        'paid' => ['label' => 'Paid', 'color' => 'green', 'icon' => 'check-circle'],
+                    ];
+                @endphp
+                @foreach($lifecycleStatuses as $key => $info)
+                    @php
+                        $count = $sellerPaymentStats->get($key . '.count', 0) ?? 0;
+                        $amount = $sellerPaymentStats->get($key . '.amount', 0) ?? 0;
+                    @endphp
+                    <div class="flex items-center justify-between py-1.5 {{ !$loop->last ? 'border-b border-slate-50' : '' }}">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-{{ $info['color'] }}-400"></div>
+                            <span class="text-[11.5px] text-slate-600">{{ $info['label'] }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] font-semibold text-slate-700">${{ number_format($amount, 2) }}</span>
+                            <span class="text-[9.5px] text-slate-400 ml-1">({{ $count }})</span>
+                        </div>
+                    </div>
+                @endforeach
+                @if($sellerPaymentStats->isEmpty())
+                    <div class="py-4 text-center">
+                        <p class="text-[11px] text-slate-400">No payment data yet</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Recent Settlements --}}
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-[14px] font-semibold text-slate-900">Recent Settlements</h3>
+                <a href="{{ route('seller.withdrawals.index') }}" class="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium">View All</a>
+            </div>
+            <div class="divide-y divide-slate-50 max-h-[300px] overflow-y-auto">
+                @forelse($recentSettlements as $settlement)
+                    <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                        <div>
+                            <p class="text-[12px] font-semibold text-slate-800">#{{ $settlement->settlement_number }}</p>
+                            <p class="text-[10.5px] text-slate-400">{{ $settlement->created_at->format('M d, Y') }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[12px] font-bold text-slate-900">${{ number_format($settlement->amount, 2) }}</p>
+                            <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded-full {{ $settlement->status_badge }}">{{ ucfirst($settlement->status) }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-4 py-6 text-center">
+                        <p class="text-[12px] text-slate-400">No settlements yet</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Recent Transactions --}}
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-[14px] font-semibold text-slate-900">Recent Transactions</h3>
+                <a href="{{ route('seller.wallet.index') }}" class="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium">View All</a>
+            </div>
+            <div class="divide-y divide-slate-50 max-h-[300px] overflow-y-auto">
+                @forelse($recentTransactions as $txn)
+                    <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-md flex items-center justify-center {{ $txn->is_credit ? 'bg-emerald-50' : 'bg-red-50' }}">
+                                @if($txn->is_credit)
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                @else
+                                    <svg class="w-3.5 h-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+                                @endif
+                            </div>
+                            <div>
+                                <p class="text-[12px] font-medium text-slate-800">{{ $txn->type_label }}</p>
+                                <p class="text-[10.5px] text-slate-400 truncate max-w-[120px]">{{ $txn->description }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[12px] font-bold {{ $txn->is_credit ? 'text-emerald-600' : 'text-red-600' }}">{{ $txn->is_credit ? '+' : '-' }}${{ number_format($txn->amount, 2) }}</p>
+                            <p class="text-[10px] text-slate-400">{{ $txn->created_at->diffForHumans() }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-4 py-6 text-center">
+                        <p class="text-[12px] text-slate-400">No transactions yet</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
     {{-- Bottom Grid --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- Low Stock Alerts --}}

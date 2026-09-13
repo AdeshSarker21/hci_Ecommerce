@@ -28,6 +28,10 @@
                     <span class="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-semibold {{ $order->payment_status_badge }}">
                         {{ $order->payment_status === 'paid' ? __('Paid') : ucfirst($order->payment_status) }}
                     </span>
+                    <a href="{{ route('account.orders.track', $order) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        {{ __('Track') }}
+                    </a>
                 </div>
             </div>
 

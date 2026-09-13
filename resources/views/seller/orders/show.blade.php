@@ -15,6 +15,11 @@
         <div class="flex items-center gap-2">
             <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $order->status_badge }}">{{ ucfirst($order->status) }}</span>
             <span class="px-3 py-1 text-sm font-semibold rounded-full {{ $order->payment_status_badge }}">{{ ucfirst($order->payment_status) }}</span>
+            @if($order->shipment)
+                <a href="{{ route('seller.shipments.show', $order->shipment) }}" class="px-3 py-1 text-xs font-medium rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200">
+                    View Shipment
+                </a>
+            @endif
         </div>
     </div>
 

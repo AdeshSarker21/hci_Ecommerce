@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminCommissionController;
+use App\Http\Controllers\Admin\AdminCourierController;
+use App\Http\Controllers\Admin\AdminCourierManagementController;
+use App\Http\Controllers\Admin\AdminSellerPaymentController;
+use App\Http\Controllers\Admin\AdminShipmentController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryAttributeController;
@@ -61,6 +65,10 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         Route::post('/addresses/{id}/default', [CustomerAccountController::class, 'setDefaultAddress'])->name('addresses.default');
         Route::get('/orders', [CustomerAccountController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [CustomerAccountController::class, 'showOrder'])->name('orders.show');
+
+        // Customer Shipment Tracking
+        Route::get('/orders/{order}/track', [\App\Http\Controllers\CustomerShipmentController::class, 'track'])->name('orders.track');
+
         Route::get('/wishlist', [CustomerAccountController::class, 'wishlist'])->name('wishlist');
         Route::get('/recently-viewed', [CustomerAccountController::class, 'recentlyViewed'])->name('recently-viewed');
         Route::get('/reviews', [CustomerAccountController::class, 'reviews'])->name('reviews');
@@ -131,6 +139,18 @@ Route::get('/recently-viewed/track/{id}', function ($id) {
     app(\App\Services\RecentlyViewedService::class)->track($id);
     return response()->json(['success' => true]);
 })->name('recently-viewed.track');
+
+// Courier Webhooks (public - no auth)
+Route::post('/webhook/steadfast', [\App\Http\Controllers\WebhookController::class, 'handleSteadfast'])->name('webhook.steadfast');
+Route::post('/webhook/pathao', [\App\Http\Controllers\WebhookController::class, 'handlePathao'])->name('webhook.pathao');
+Route::post('/webhook/courier/{courierSlug}', [\App\Http\Controllers\WebhookController::class, 'genericWebhook'])->name('webhook.courier');
+
+// API Webhook Routes (public - no auth)
+Route::prefix('api/webhooks/courier')->name('api.webhooks.courier.')->group(function () {
+    Route::post('/steadfast', [\App\Http\Controllers\WebhookController::class, 'handleSteadfast'])->name('steadfast');
+    Route::post('/pathao', [\App\Http\Controllers\WebhookController::class, 'handlePathao'])->name('pathao');
+    Route::post('/{courierSlug}', [\App\Http\Controllers\WebhookController::class, 'genericWebhook'])->name('generic');
+});
 
 // Admin Panel
 Route::prefix('admin')
@@ -333,6 +353,95 @@ Route::prefix('admin')
         Route::get('/commission/settlements', [AdminCommissionController::class, 'settlements'])->name('commission.settlements');
         Route::patch('/commission/settlements/{settlement}/complete', [AdminCommissionController::class, 'completeSettlement'])->name('commission.settlements.complete');
         Route::post('/commission/settlements', [AdminCommissionController::class, 'createSettlement'])->name('commission.settlements.store');
+        Route::get('/commission/seller-wallet', [AdminCommissionController::class, 'sellerWalletInfo'])->name('commission.seller-wallet');
+
+        // Seller Payments
+        Route::get('/seller-payments', [AdminSellerPaymentController::class, 'index'])->name('seller-payments.index')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/seller-payments/{order}', [AdminSellerPaymentController::class, 'show'])->name('seller-payments.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::post('/seller-payments/settlement', [AdminSellerPaymentController::class, 'storeSettlement'])->name('seller-payments.settlement.store')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/seller-payments/settlement/{settlement}/complete', [AdminSellerPaymentController::class, 'completeSettlement'])->name('seller-payments.settlement.complete')
+            ->middleware('check.permission:vendors.manage');
+        Route::get('/seller-payments/seller/{seller}/finance', [AdminSellerPaymentController::class, 'sellerFinance'])->name('seller-payments.seller-finance')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+
+        // Courier Collections & Reconciliation
+        Route::get('/courier-collections', [AdminCourierController::class, 'index'])->name('courier-collections.index')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/courier-collections/{collection}', [AdminCourierController::class, 'show'])->name('courier-collections.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::patch('/courier-collections/{collection}/confirm', [AdminCourierController::class, 'confirm'])->name('courier-collections.confirm')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/courier-collections/confirm-bulk', [AdminCourierController::class, 'confirmBulk'])->name('courier-collections.confirm-bulk')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/courier-collections/sync', [AdminCourierController::class, 'sync'])->name('courier-collections.sync')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/courier-collections/{collection}/sync-single', [AdminCourierController::class, 'syncSingle'])->name('courier-collections.sync-single')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/courier-collections/{collection}/reconcile', [AdminCourierController::class, 'reconcile'])->name('courier-collections.reconcile')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/courier-collections/{collection}/settlement-status', [AdminCourierController::class, 'updateSettlementStatus'])->name('courier-collections.update-settlement-status')
+            ->middleware('check.permission:vendors.manage');
+
+        // Courier Management
+        Route::get('/couriers', [AdminCourierManagementController::class, 'index'])->name('couriers.index')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/couriers/create', [AdminCourierManagementController::class, 'create'])->name('couriers.create')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/couriers', [AdminCourierManagementController::class, 'store'])->name('couriers.store')
+            ->middleware('check.permission:vendors.manage');
+        Route::get('/couriers/{courier}', [AdminCourierManagementController::class, 'show'])->name('couriers.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/couriers/{courier}/edit', [AdminCourierManagementController::class, 'edit'])->name('couriers.edit')
+            ->middleware('check.permission:vendors.manage');
+        Route::put('/couriers/{courier}', [AdminCourierManagementController::class, 'update'])->name('couriers.update')
+            ->middleware('check.permission:vendors.manage');
+        Route::delete('/couriers/{courier}', [AdminCourierManagementController::class, 'destroy'])->name('couriers.destroy')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/couriers/{courier}/toggle-status', [AdminCourierManagementController::class, 'toggleStatus'])->name('couriers.toggle-status')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/couriers/{courier}/set-default', [AdminCourierManagementController::class, 'setDefault'])->name('couriers.set-default')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/couriers/{courier}/test-connection', [AdminCourierManagementController::class, 'testConnection'])->name('couriers.test-connection')
+            ->middleware('check.permission:vendors.manage');
+
+        // Courier API Settings
+        Route::get('/courier-api-settings', [AdminCourierManagementController::class, 'apiSettings'])->name('couriers.api-settings')
+            ->middleware('check.permission:vendors.manage');
+        Route::put('/courier-api-settings/{courier}', [AdminCourierManagementController::class, 'updateApiSettings'])->name('couriers.api-settings.update')
+            ->middleware('check.permission:vendors.manage');
+
+        // Webhook Management
+        Route::get('/courier-webhooks', [\App\Http\Controllers\Admin\AdminWebhookController::class, 'index'])->name('courier-webhooks.index')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/courier-webhooks/{log}', [\App\Http\Controllers\Admin\AdminWebhookController::class, 'show'])->name('courier-webhooks.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::post('/courier-webhooks/{log}/retry', [\App\Http\Controllers\Admin\AdminWebhookController::class, 'retry'])->name('courier-webhooks.retry')
+            ->middleware('check.permission:vendors.manage');
+        Route::delete('/courier-webhooks/{log}', [\App\Http\Controllers\Admin\AdminWebhookController::class, 'destroy'])->name('courier-webhooks.destroy')
+            ->middleware('check.permission:vendors.manage');
+
+        // Shipments
+        Route::get('/shipments', [AdminShipmentController::class, 'index'])->name('shipments.index')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/shipments/create/{order}', [AdminShipmentController::class, 'create'])->name('shipments.create')
+            ->middleware('check.permission:vendors.manage');
+        Route::post('/shipments', [AdminShipmentController::class, 'store'])->name('shipments.store')
+            ->middleware('check.permission:vendors.manage');
+        Route::get('/shipments/{shipment}', [AdminShipmentController::class, 'show'])->name('shipments.show')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::post('/shipments/{shipment}/retry', [AdminShipmentController::class, 'retry'])->name('shipments.retry')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/shipments/{shipment}/sync-status', [AdminShipmentController::class, 'syncStatus'])->name('shipments.sync-status')
+            ->middleware('check.permission:vendors.manage');
+        Route::patch('/shipments/{shipment}/update-status', [AdminShipmentController::class, 'updateStatus'])->name('shipments.update-status')
+            ->middleware('check.permission:vendors.manage');
+        Route::get('/delivery-status', [AdminShipmentController::class, 'deliveryStatus'])->name('shipments.delivery-status')
+            ->middleware('check.permission:vendors.view,vendors.manage');
+        Route::get('/tracking', [AdminShipmentController::class, 'tracking'])->name('shipments.tracking')
+            ->middleware('check.permission:vendors.view,vendors.manage');
     });
 
 // Seller Dashboard
@@ -394,6 +503,10 @@ Route::prefix('seller')
             Route::patch('/orders/{order}/note', [SellerOrderController::class, 'addNote'])->name('orders.note');
             Route::patch('/orders/{order}/tracking', [SellerOrderController::class, 'updateTracking'])->name('orders.tracking');
             Route::post('/orders/bulk-update', [SellerOrderController::class, 'bulkUpdate'])->name('orders.bulk-update');
+
+            // Shipment Tracking (Seller)
+            Route::get('/shipments', [\App\Http\Controllers\Seller\SellerShipmentController::class, 'index'])->name('shipments.index');
+            Route::get('/shipments/{shipment}', [\App\Http\Controllers\Seller\SellerShipmentController::class, 'show'])->name('shipments.show');
 
             // Reviews (placeholder)
             Route::get('/reviews', function () {

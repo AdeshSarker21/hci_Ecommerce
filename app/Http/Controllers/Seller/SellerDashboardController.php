@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommissionRecord;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Settlement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +39,29 @@ class SellerDashboardController extends Controller
         $totalEarnings = $wallet ? (float) $wallet->total_earned : 0;
         $pendingPayout = $wallet ? (float) $wallet->pending_balance : 0;
         $availableBalance = $wallet ? (float) $wallet->available_balance : 0;
+        $withdrawnAmount = $wallet ? (float) $wallet->withdrawn_amount : 0;
+
+        // Finance stats
+        $totalCommission = CommissionRecord::where('seller_id', $seller->id)->sum('commission_amount');
+        $totalSettled = Settlement::where('seller_id', $seller->id)->where('status', 'completed')->sum('amount');
+        $recentSettlements = Settlement::where('seller_id', $seller->id)->latest()->limit(5)->get();
+        $recentTransactions = $wallet ? $wallet->transactions()->latest()->limit(5)->get() : collect();
+
+        // Seller payment status breakdown
+        $sellerPaymentStats = Order::where('seller_id', $seller->id)
+            ->where('payment_status', 'paid')
+            ->whereNotNull('seller_payment_status')
+            ->selectRaw('seller_payment_status, count(*) as count, SUM(total) as amount')
+            ->groupBy('seller_payment_status')
+            ->pluck('amount', 'seller_payment_status');
 
         return view('seller.dashboard-analytics', compact(
             'seller', 'stats', 'salesData', 'recentOrders',
             'topProducts', 'lowStockProducts', 'pendingProducts',
             'recentActivity', 'performance', 'period',
-            'totalEarnings', 'pendingPayout', 'availableBalance'
+            'totalEarnings', 'pendingPayout', 'availableBalance', 'withdrawnAmount',
+            'totalCommission', 'totalSettled', 'recentSettlements', 'recentTransactions',
+            'sellerPaymentStats'
         ));
     }
 

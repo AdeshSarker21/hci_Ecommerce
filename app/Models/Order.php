@@ -17,7 +17,7 @@ class Order extends Model
         'order_number', 'seller_id', 'user_id', 'status',
         'subtotal', 'tax', 'shipping_cost', 'discount', 'total',
         'currency', 'notes', 'seller_notes', 'shipping_address', 'billing_address',
-        'payment_method', 'payment_status',
+        'payment_method', 'payment_status', 'seller_payment_status',
         'tracking_number', 'courier_name', 'tracking_url',
         'paid_at', 'processing_at', 'shipped_at', 'delivered_at', 'cancelled_at',
     ];
@@ -79,6 +79,26 @@ class Order extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->latest();
+    }
+
+    public function courierCollection(): HasOne
+    {
+        return $this->hasOne(CourierCollection::class);
+    }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    public function shipment(): HasOne
+    {
+        return $this->hasOne(Shipment::class)->latest();
+    }
+
+    public function commissionRecord()
+    {
+        return $this->hasOne(CommissionRecord::class);
     }
 
     public function scopeSearch($query, ?string $search)
@@ -222,5 +242,43 @@ class Order extends Model
     public function getCustomerNameAttribute(): string
     {
         return $this->user?->name ?? 'Guest';
+    }
+
+    public function getSellerPaymentStatusBadgeAttribute(): string
+    {
+        return match ($this->seller_payment_status) {
+            'pending_collection' => 'bg-amber-100 text-amber-800',
+            'collected_by_courier' => 'bg-blue-100 text-blue-800',
+            'awaiting_settlement' => 'bg-purple-100 text-purple-800',
+            'available_for_payout' => 'bg-emerald-100 text-emerald-800',
+            'payout_processing' => 'bg-indigo-100 text-indigo-800',
+            'paid' => 'bg-green-100 text-green-800',
+            default => 'bg-gray-100 text-gray-500',
+        };
+    }
+
+    public function getSellerPaymentStatusLabelAttribute(): string
+    {
+        return match ($this->seller_payment_status) {
+            'pending_collection' => 'Pending Collection',
+            'collected_by_courier' => 'Collected by Courier',
+            'awaiting_settlement' => 'Awaiting Settlement',
+            'available_for_payout' => 'Available for Payout',
+            'payout_processing' => 'Payout Processing',
+            'paid' => 'Paid',
+            default => 'N/A',
+        };
+    }
+
+    public static function sellerPaymentStatuses(): array
+    {
+        return [
+            'pending_collection' => 'Pending Collection',
+            'collected_by_courier' => 'Collected by Courier',
+            'awaiting_settlement' => 'Awaiting Settlement',
+            'available_for_payout' => 'Available for Payout',
+            'payout_processing' => 'Payout Processing',
+            'paid' => 'Paid',
+        ];
     }
 }
